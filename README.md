@@ -2,6 +2,8 @@
 
 CPU tile-based software renderer + 3D remake of the Flash game 泞之翼2.
 
+**如果你是人类并且知道这是什么: 我闲的没事搓的，渲染器是我写的，有几个函数是哈基米写的，别的都是大肥鱼写的，别打我，可以到 4 群找我**
+
 ## Source layout
 
 ```
