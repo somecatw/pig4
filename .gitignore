@@ -7,3 +7,22 @@ release/
 CMakeLists.txt.user
 ak.*
 assets/*.png
+
+# Local 3ds Max / V-Ray projects, decompiled reference data and packaged builds.
+3dmax_proj/
+dist/
+flash_export/
+
+# V-Ray intermediate passes: only Complete/Merged runtime textures are kept.
+assets/hotel/**/*_VRayDiffuseFilterMap.*
+assets/hotel/**/*_VRayRawTotalLightingMap.*
+assets/hotel/**/*_VRayRawLightingMap.*
+assets/hotel/**/*_VRayAOMap.*
+
+# Local smoke-test screenshots; kept on disk but not committed.
+assets/hotel/dev/
+assets/hotel/*/dev/screenshots/
+
+# Python caches
+__pycache__/
+*.pyc

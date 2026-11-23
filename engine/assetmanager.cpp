@@ -1,0 +1,299 @@
+#include "assetmanager.h"
+// By doubao
+
+#include <QFile>
+#include <QTextStream>
+#include <QDir>
+#include <QDebug>
+#include <map>
+#include <sstream>
+#include <string>
+#include "utils.h"
+
+// 定义全局AssetManager实例
+AssetManager assetManager;
+
+// 分割字符串的辅助函数（处理OBJ/MTL的行解析，按空格分割）
+static std::vector<std::string> splitString(const std::string& str, char delimiter = ' ')
+{
+    std::vector<std::string> parts;
+    std::stringstream ss(str);
+    std::string part;
+    while (std::getline(ss, part, delimiter))
+    {
+        if (!part.empty())
+            parts.push_back(part);
+    }
+    return parts;
+}
+
+std::map<QString, int> AssetManager::loadMTL(const QString& mtlPath, const QString& baseDir)
+{
+    std::map<QString, int> mtlMap;
+    QFile mtlFile(mtlPath);
+    if (!mtlFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "[MTL] Failed to open:" << mtlPath;
+        return mtlMap;
+    }
+
+    qInfo() << "[MTL] Parsing file:" << mtlPath;
+
+    QTextStream in(&mtlFile);
+    QString currentMtlName;
+    Material currentMat;
+    bool hasMat = false;
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().simplified();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        std::vector<std::string> parts = splitString(line.toStdString());
+
+        if (parts[0] == "newmtl") {
+            // 保存上一个解析完的材质
+            if (hasMat) {
+                m_materials.push_back(currentMat);
+                mtlMap[currentMtlName] = m_materials.size() - 1;
+                qInfo() << " - Material defined:" << currentMtlName << "ID:" << (m_materials.size() - 1);
+            }
+            currentMtlName = (parts.size() > 1) ? QString::fromStdString(parts[1]) : "default";
+            currentMat = Material();
+            hasMat = true;
+        }
+        else if (parts[0] == "map_Kd" && hasMat) {
+            QString texRelPath = QString::fromStdString(parts[1]);
+            QString texAbsPath = QDir(baseDir).absoluteFilePath(texRelPath);
+            currentMat.img = QImage(texAbsPath);
+            currentMat.updateImage();
+            // currentMat.img = QImage(texAbsPath);
+            if (currentMat.img.isNull()) {
+                qWarning() << "  [!] Failed to load texture:" << texAbsPath;
+            } else {
+                qInfo() << "  [+] Texture loaded:" << texAbsPath;
+            }
+        }
+    }
+
+    // 别忘了保存最后一个材质块
+    if (hasMat) {
+        m_materials.push_back(currentMat);
+        mtlMap[currentMtlName] = m_materials.size() - 1;
+        qInfo() << " - Material defined:" << currentMtlName << "ID:" << (m_materials.size() - 1);
+    }
+
+    mtlFile.close();
+    return mtlMap;
+}
+GameObject *AssetManager::loadOBJ(const QString& objPath, bool isStatic)
+{
+    QFile objFile(objPath);
+    if (!objFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "[OBJ] Failed to open:" << objPath;
+        return nullptr;
+    }
+
+    qInfo() << "[OBJ] Loading:" << objPath;
+
+    std::vector<Vec3> tempPos;
+    std::vector<Vec3> tempUV;
+    std::map<QString, int> mtlNameToId;
+
+    Mesh currentMesh;
+    currentMesh.materialID = -1;
+    std::map<std::pair<uint, uint>, uint> vertexMap;
+
+    QString objBaseDir = QFileInfo(objPath).absolutePath();
+    QTextStream in(&objFile);
+    QList<MeshActor*> subObjects;
+
+    QString currentObjectName;
+
+    auto flushMesh = [&]() {
+        if (currentMesh.triangles.empty()) return;
+        currentMesh.meshID = m_meshes.size();
+        m_meshes.push_back(currentMesh);
+        auto *actor = new MeshActor(currentMesh.meshID, isStatic);
+        // 保留 OBJ 的 o/g 名字；RoomManager 用 INTERACT_<id> 找可交互几何。
+        if (!currentObjectName.isEmpty())
+            actor->setObjectName(currentObjectName);
+        subObjects.push_back(actor);
+        currentMesh = Mesh();
+        currentMesh.materialID = -1;
+        vertexMap.clear();
+    };
+
+    // Max 里的 PH_* 只是 manifest 标志物，不参与渲染
+    bool skipObject = false;
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().simplified();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        std::vector<std::string> parts = splitString(line.toStdString());
+        if (parts.empty()) continue;
+
+        std::string cmd = parts[0];
+
+        if (cmd == "v") {
+            tempPos.emplace_back(std::stof(parts[1]), std::stof(parts[2]), std::stof(parts[3]));
+        }
+        else if (cmd == "vt") {
+            tempUV.emplace_back(std::stof(parts[1]), 1.0f - std::stof(parts[2]), 0.0f);
+        }
+        else if (cmd == "mtllib") {
+            QString mtlAbsPath = QDir(objBaseDir).absoluteFilePath(QString::fromStdString(parts[1]));
+            auto newMtls = loadMTL(mtlAbsPath, objBaseDir);
+            mtlNameToId.insert(newMtls.begin(), newMtls.end());
+        }
+        else if (cmd == "o" || cmd == "g") {
+            // 新对象开始前先结束上一块，此时 currentObjectName 还是上一块的
+            // 名字，否则 o/g 先改名会把前一个网格挂到下一个名字上。
+            flushMesh();
+            bool placeholder = false;
+            for (size_t i = 1; i < parts.size(); ++i) {
+                if (QString::fromStdString(parts[i]).startsWith("PH_")) {
+                    placeholder = true;
+                    break;
+                }
+            }
+            if (parts.size() > 1)
+                currentObjectName = QString::fromStdString(parts[1]);
+            skipObject = placeholder;
+        }
+        else if (cmd == "usemtl") {
+            QString mtlName = QString::fromStdString(parts[1]);
+            flushMesh();
+            if (mtlNameToId.count(mtlName)) {
+                currentMesh.materialID = mtlNameToId[mtlName];
+            } else {
+                currentMesh.materialID = -1;
+            }
+        }
+        else if (cmd == "f") {
+            if (skipObject) continue;
+            // parts[0] 是 "f"，后面可能有 3 个、4 个或更多顶点
+            if (parts.size() < 4) continue;
+
+            std::vector<uint> faceVertexIndices; // 存储当前面转换后的顶点索引
+            bool faceValid = true;
+
+            // 1. 先解析并存储该面所有的顶点
+            for (size_t i = 1; i < parts.size(); ++i) {
+                std::vector<std::string> vParts = splitString(parts[i], '/');
+                if (vParts.empty()) { faceValid = false; break; }
+
+                uint posIdx = std::stoull(vParts[0]) - 1;
+                uint uvIdx = (vParts.size() > 1 && !vParts[1].empty()) ? (std::stoull(vParts[1]) - 1) : 0;
+
+                if (posIdx >= tempPos.size()) { faceValid = false; break; }
+
+                // 使用 Map 复用顶点，减少冗余
+                std::pair<uint, uint> key = {posIdx, uvIdx};
+                if (vertexMap.find(key) == vertexMap.end()) {
+                    Vertex v;
+                    v.pos = tempPos[posIdx];
+                    v.uv = (uvIdx < tempUV.size()) ? tempUV[uvIdx] : Vec3(0, 0, 0);
+                    vertexMap[key] = (uint)currentMesh.vertices.size();
+                    currentMesh.vertices.push_back(v);
+                }
+                faceVertexIndices.push_back(vertexMap[key]);
+            }
+
+            if (!faceValid || faceVertexIndices.size() < 3) continue;
+
+            // 2. 扇形剖分：将多边形拆分为 (n-2) 个三角形
+            for (size_t i = 1; i < faceVertexIndices.size() - 1; ++i) {
+                Triangle tri;
+                tri.vid[0] = faceVertexIndices[0];
+                tri.vid[1] = faceVertexIndices[i];
+                tri.vid[2] = faceVertexIndices[i + 1];
+
+                // 计算该三角形的面法线
+                Vec3 v0 = currentMesh.vertices[tri.vid[0]].pos;
+                Vec3 v1 = currentMesh.vertices[tri.vid[1]].pos;
+                Vec3 v2 = currentMesh.vertices[tri.vid[2]].pos;
+                tri.hardNormal = (v1 - v0).cross(v2 - v0);
+                tri.hardNormal.normalize();
+
+                currentMesh.triangles.push_back(tri);
+            }
+        }
+    }
+
+    flushMesh();
+
+    GameObject *ret = nullptr;
+    if(subObjects.size()){
+        ret = new GameObject();
+        for(MeshActor *actor:subObjects)
+            actor->setParent(ret);
+    }
+
+    objFile.close();
+    qInfo() << "[OBJ] Load finished. Total SubMeshes:" << m_meshes.size();
+
+    return ret;
+}
+
+int AssetManager::addMaterial(const QImage &img)
+{
+    if (img.isNull()) return -1;
+    Material m;
+    m.img = img;
+    m.updateImage();
+    m_materials.push_back(m);
+    return int(m_materials.size()) - 1;
+}
+
+int AssetManager::addMesh(const Mesh &mesh)
+{
+    Mesh copy = mesh;
+    copy.meshID = uint(m_meshes.size());
+    m_meshes.push_back(std::move(copy));
+    return int(m_meshes.size()) - 1;
+}
+
+int clg2(int x){
+    for(int i=1;i<=20;i++){
+        if((1<<i)>=x)return i;
+    }
+    return 20;
+}
+void Material::updateImage(){
+    mipmap2.clear();
+    int w = 1<<clg2(img.width());
+    int h = 1<<clg2(img.height());
+    w = std::max(w, h);
+    h = w;
+    for(int mipLevel = 0; mipLevel <= 8; mipLevel ++){
+        int currW = (w-1) / (1<<mipLevel) + 1;
+        int currH = (h-1) / (1<<mipLevel) + 1;
+
+        QImage tmp = img.scaled(currW, currH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        // mipmaps.push_back(tmp);
+        mipmap2.push_back(tmp);
+    }
+}
+
+TextureMap::TextureMap(const QImage &img){
+    w = img.width();
+    h = img.height();
+
+    assert(__builtin_popcount(w) == 1 && w == h);
+    int ph = (h-1) / textureTileSize + 1;
+    int pw = (w-1) / textureTileSize + 1;
+    tiles.clear();
+    tiles.resize(ph);
+    for(auto [id, line]: enumerate(tiles)){
+        line.resize(pw);
+        for(int i=0;i<pw;i++){
+            int currY = id * textureTileSize;
+            int currX = i  * textureTileSize;
+            for(int dy=0; dy<textureTileSize; dy++){
+                if(currY+dy >= h)break;
+                for(int dx=0; dx<textureTileSize; dx++){
+                    if(currX+dx >= w)break;
+                    line[i].pixels[dy][dx] = img.pixel(currX+dx, currY+dy);
+                }
+            }
+        }
+    }
+}

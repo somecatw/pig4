@@ -1,0 +1,212 @@
+{
+  "room": "room_1wcorridor",
+  "markers": [
+    {
+      "name": "PH_DOOR_1W_lobby",
+      "type": "DOOR",
+      "id": "1W_lobby",
+      "position": [
+        206.4624,
+        15.0,
+        -382.3939
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_DOOR_1F_elevator",
+      "type": "DOOR",
+      "id": "1F_elevator",
+      "position": [
+        199.2935,
+        15.0,
+        -317.5961
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        27.0,
+        32.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_SPR_call_elevator_1F",
+      "type": "SPR",
+      "id": "call_elevator_1F",
+      "position": [
+        202.5728,
+        18.4641,
+        -335.7526
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "call_elevator_1F",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_elevator_panel_1F",
+      "type": "SPR",
+      "id": "elevator_panel_1F",
+      "position": [
+        196.3044,
+        18.4641,
+        -300.1905
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "elevator_panel_1F",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_1W_painting",
+      "type": "SPR",
+      "id": "1W_painting",
+      "position": [
+        254.7624,
+        23.7791,
+        -362.5464
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "1W_painting",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_DOOR_1W_lounge",
+      "type": "DOOR",
+      "id": "1W_lounge",
+      "position": [
+        156.4905,
+        15.0,
+        -360.85455
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        14.5999,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    }
+  ]
+}

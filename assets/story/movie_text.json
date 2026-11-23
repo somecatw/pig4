@@ -1,0 +1,515 @@
+{
+  "DianSi": [
+    {
+      "frame": 1,
+      "speaker": "丹",
+      "text": "啊——！"
+    },
+    {
+      "frame": 2,
+      "speaker": "丹",
+      "text": "（这……水里……难道……）"
+    },
+    {
+      "frame": 3,
+      "speaker": "丹",
+      "text": "（带……电……）"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 5,
+      "speaker": null,
+      "text": "【丹倒在积水里，失去了知觉……】"
+    },
+    {
+      "frame": 6,
+      "speaker": null,
+      "text": "“触电结局”达成！"
+    }
+  ],
+  "End1": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "“迷失结局”达成！"
+    }
+  ],
+  "End2": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "“觉醒结局（真结局）”达成！"
+    }
+  ],
+  "End3": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "“逃脱结局”达成！"
+    }
+  ],
+  "End4": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "“循环结局”达成！"
+    }
+  ],
+  "Fall": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "【砰！】"
+    },
+    {
+      "frame": 2,
+      "speaker": "丹",
+      "text": "啊！"
+    },
+    {
+      "frame": 3,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "【黑暗的走廊似乎隐藏着机关。丹掉下去后，再也没有站起来……】"
+    },
+    {
+      "frame": 5,
+      "speaker": null,
+      "text": "“坠落结局”达成！"
+    }
+  ],
+  "Film": [
+    {
+      "frame": 1,
+      "speaker": null,
+      "text": "【“The Cube Hotel”，一栋坐落于G市半山腰的小旅馆……】"
+    },
+    {
+      "frame": 2,
+      "speaker": null,
+      "text": "【一天，一名身着青色连衣裙的小女孩来到了这里。】"
+    },
+    {
+      "frame": 3,
+      "speaker": null,
+      "text": "【她推开大门，走进屋内。】"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "【改变了这里的轨迹。】"
+    },
+    {
+      "frame": 6,
+      "speaker": null,
+      "text": "【最近一直有怪事发生。】"
+    }
+  ],
+  "Gas1": [
+    {
+      "frame": 1,
+      "speaker": "如心",
+      "text": "……"
+    },
+    {
+      "frame": 1,
+      "speaker": "丹",
+      "text": "……"
+    },
+    {
+      "frame": 2,
+      "speaker": "如心",
+      "text": "这……这是什么气味……"
+    },
+    {
+      "frame": 2,
+      "speaker": "丹",
+      "text": "这……这是什么气味……"
+    },
+    {
+      "frame": 4,
+      "speaker": "如心",
+      "text": "！"
+    },
+    {
+      "frame": 4,
+      "speaker": "丹",
+      "text": "！"
+    },
+    {
+      "frame": 5,
+      "speaker": "如心",
+      "text": "这是……毒气！"
+    },
+    {
+      "frame": 5,
+      "speaker": "丹",
+      "text": "这是……毒气！"
+    },
+    {
+      "frame": 7,
+      "speaker": "如心",
+      "text": "不行！我要赶紧离开这里……"
+    },
+    {
+      "frame": 7,
+      "speaker": "丹",
+      "text": "不行！我要赶紧离开这里……"
+    },
+    {
+      "frame": 8,
+      "speaker": "如心",
+      "text": "可……可是……好难受……谁来救救我……"
+    },
+    {
+      "frame": 8,
+      "speaker": "丹",
+      "text": "可……可是……好难受……谁来救救我……"
+    },
+    {
+      "frame": 9,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 9,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 10,
+      "speaker": null,
+      "text": "【随着毒气充斥整个房间，如心的意识也渐渐远去……】"
+    },
+    {
+      "frame": 10,
+      "speaker": null,
+      "text": "【随着毒气充斥整个房间，丹的意识也渐渐远去……】"
+    },
+    {
+      "frame": 11,
+      "speaker": null,
+      "text": "“毒气结局”达成！"
+    },
+    {
+      "frame": 11,
+      "speaker": null,
+      "text": "“毒气结局”达成！"
+    }
+  ],
+  "Gas2": [
+    {
+      "frame": 1,
+      "speaker": "如心",
+      "text": "……"
+    },
+    {
+      "frame": 1,
+      "speaker": "丹",
+      "text": "……"
+    },
+    {
+      "frame": 2,
+      "speaker": "如心",
+      "text": "这……这是什么气味……"
+    },
+    {
+      "frame": 2,
+      "speaker": "丹",
+      "text": "这……这是什么气味……"
+    },
+    {
+      "frame": 4,
+      "speaker": "如心",
+      "text": "！"
+    },
+    {
+      "frame": 4,
+      "speaker": "丹",
+      "text": "！"
+    },
+    {
+      "frame": 5,
+      "speaker": "如心",
+      "text": "这是……毒气！"
+    },
+    {
+      "frame": 5,
+      "speaker": "丹",
+      "text": "这是……毒气！"
+    },
+    {
+      "frame": 7,
+      "speaker": "如心",
+      "text": "不行！我要赶紧离开这里……"
+    },
+    {
+      "frame": 7,
+      "speaker": "丹",
+      "text": "不行！我要赶紧离开这里……"
+    },
+    {
+      "frame": 8,
+      "speaker": "如心",
+      "text": "可……可是……好难受……谁来救救我……"
+    },
+    {
+      "frame": 8,
+      "speaker": "丹",
+      "text": "可……可是……好难受……谁来救救我……"
+    },
+    {
+      "frame": 9,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 9,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 10,
+      "speaker": null,
+      "text": "【随着毒气充斥整个房间，如心的意识也渐渐远去……】"
+    },
+    {
+      "frame": 10,
+      "speaker": null,
+      "text": "【随着毒气充斥整个房间，丹的意识也渐渐远去……】"
+    },
+    {
+      "frame": 11,
+      "speaker": null,
+      "text": "“毒气结局”达成！"
+    },
+    {
+      "frame": 11,
+      "speaker": null,
+      "text": "“毒气结局”达成！"
+    }
+  ],
+  "HYJJ_A": [
+    {
+      "frame": 2,
+      "speaker": "丹",
+      "text": "（小七……）"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "“黑影结局A”达成！"
+    }
+  ],
+  "HYJJ_B": [
+    {
+      "frame": 2,
+      "speaker": null,
+      "text": "【如心倒在血泊之中，不再动弹。】"
+    },
+    {
+      "frame": 2,
+      "speaker": null,
+      "text": "【丹倒在血泊之中，不再动弹。】"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "“黑影结局B”达成！"
+    }
+  ],
+  "HYJJ_C": [
+    {
+      "frame": 2,
+      "speaker": null,
+      "text": "【炸弹引燃了整个房间，如心受伤后昏死过去。】"
+    },
+    {
+      "frame": 4,
+      "speaker": null,
+      "text": "“爆炸结局”达成！"
+    }
+  ],
+  "KaiChangBai": [
+    {
+      "frame": 1,
+      "speaker": "???",
+      "text": "不要再逃避了……"
+    },
+    {
+      "frame": 2,
+      "speaker": "???",
+      "text": "执念只会让你重复犯错……"
+    },
+    {
+      "frame": 3,
+      "speaker": "???",
+      "text": "不！这不是真的！我不要！"
+    },
+    {
+      "frame": 5,
+      "speaker": "???",
+      "text": "黑……黑影！"
+    },
+    {
+      "frame": 6,
+      "speaker": "???",
+      "text": "你是怎么进来的……"
+    },
+    {
+      "frame": 7,
+      "speaker": null,
+      "text": "【“零”】"
+    },
+    {
+      "frame": 8,
+      "speaker": "???",
+      "text": "啊——！"
+    },
+    {
+      "frame": 9,
+      "speaker": "???",
+      "text": "救……救命……"
+    },
+    {
+      "frame": 10,
+      "speaker": "???",
+      "text": "……"
+    },
+    {
+      "frame": 11,
+      "speaker": "丹",
+      "text": "！"
+    },
+    {
+      "frame": 12,
+      "speaker": "丹",
+      "text": "（好可怕的梦……虽然内容记不太清了，但是心有余悸的感觉还在。）"
+    },
+    {
+      "frame": 13,
+      "speaker": "丹",
+      "text": "（对了，梦里好像有一扇绿门，可是……不知道为什么，我会对绿门感到害怕……）"
+    },
+    {
+      "frame": 14,
+      "speaker": "丹",
+      "text": "……"
+    },
+    {
+      "frame": 15,
+      "speaker": "丹",
+      "text": "咦？小七？小七呢？小七去哪儿了？"
+    },
+    {
+      "frame": 16,
+      "speaker": "丹",
+      "text": "小七一直都很乖巧，大半夜地不会到处乱跑的……"
+    },
+    {
+      "frame": 17,
+      "speaker": "丹",
+      "text": "我有不好的预感……"
+    },
+    {
+      "frame": 21,
+      "speaker": "丹",
+      "text": "不行！我得赶紧把小七找回来！"
+    },
+    {
+      "frame": 22,
+      "speaker": "???",
+      "text": "等一下！你要去哪里？"
+    },
+    {
+      "frame": 23,
+      "speaker": "???",
+      "text": "回来！外面只有无尽的痛苦！"
+    },
+    {
+      "frame": 24,
+      "speaker": "???",
+      "text": "我不想看到你再有一次那样的经历！"
+    },
+    {
+      "frame": 26,
+      "speaker": null,
+      "text": "【“三”】"
+    },
+    {
+      "frame": 27,
+      "speaker": null,
+      "text": "【“二”】"
+    },
+    {
+      "frame": 28,
+      "speaker": null,
+      "text": "【“一”】"
+    },
+    {
+      "frame": 29,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 30,
+      "speaker": null,
+      "text": "……\n……"
+    },
+    {
+      "frame": 31,
+      "speaker": null,
+      "text": "……\n……\n……"
+    },
+    {
+      "frame": 32,
+      "speaker": null,
+      "text": "【与丹同宿一屋的小七在半夜里失踪了。】"
+    },
+    {
+      "frame": 33,
+      "speaker": "丹",
+      "text": "！"
+    },
+    {
+      "frame": 34,
+      "speaker": "丹",
+      "text": "怎……怎么会……"
+    },
+    {
+      "frame": 35,
+      "speaker": null,
+      "text": "【倪丹，女，G市当红歌星。】"
+    },
+    {
+      "frame": 36,
+      "speaker": null,
+      "text": "【深夜，借宿于魔方旅馆的她，被一场噩梦惊醒。】"
+    },
+    {
+      "frame": 37,
+      "speaker": "丹",
+      "text": "……"
+    },
+    {
+      "frame": 38,
+      "speaker": "丹",
+      "text": "这是怎么回事……而且……我怎么会穿成这样睡觉……"
+    },
+    {
+      "frame": 39,
+      "speaker": "???",
+      "text": "而且是不断地重复……"
+    }
+  ],
+  "LadderDown": [],
+  "LadderUp": []
+}

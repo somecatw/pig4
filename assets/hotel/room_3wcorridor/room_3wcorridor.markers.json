@@ -1,0 +1,178 @@
+{
+  "room": "room_3wcorridor",
+  "markers": [
+    {
+      "name": "PH_DOOR_305W",
+      "type": "DOOR",
+      "id": "305W",
+      "position": [
+        206.4624,
+        15.0,
+        -45.1563
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_DOOR_3F_elevator",
+      "type": "DOOR",
+      "id": "3F_elevator",
+      "position": [
+        199.2935,
+        15.0,
+        19.6415
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        27.0,
+        32.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_SPR_puzzle_3W",
+      "type": "SPR",
+      "id": "puzzle_3W",
+      "position": [
+        157.9247,
+        18.4641,
+        -37.4578
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "puzzle_3W",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_elevator_panel_3F",
+      "type": "SPR",
+      "id": "elevator_panel_3F",
+      "position": [
+        196.3044,
+        18.4641,
+        37.0471
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "elevator_panel_3F",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_call_elevator_3F",
+      "type": "SPR",
+      "id": "call_elevator_3F",
+      "position": [
+        202.5728,
+        18.4641,
+        1.4851
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "call_elevator_3F",
+      "texture": "",
+      "billboard": false
+    }
+  ]
+}

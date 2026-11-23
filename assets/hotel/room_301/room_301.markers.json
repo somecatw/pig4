@@ -1,0 +1,108 @@
+{
+  "room": "room_301",
+  "markers": [
+    {
+      "name": "PH_DOOR_301_9L",
+      "type": "DOOR",
+      "id": "9",
+      "position": [
+        -41.5832,
+        15.0,
+        -44.5158
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        15.0,
+        30.0
+      ],
+      "thickness": 5.0,
+      "side": "L",
+      "openAngle": 1.4,
+      "style": "9",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_WIN_301_L",
+      "type": "WIN",
+      "id": "window_1",
+      "position": [
+        35.72125,
+        21.2449,
+        -27.187
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        13.5944,
+        20.0
+      ],
+      "thickness": 2.7979,
+      "side": "L",
+      "openAngle": 1.4,
+      "style": "default",
+      "asset": "../shared/props/window_1_engine.obj"
+    },
+    {
+      "name": "PH_SPR_silver_key",
+      "type": "SPR",
+      "id": "silver_key",
+      "position": [
+        10.75735,
+        11.1374,
+        -41.262725
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        -0.0,
+        0.422616,
+        -0.906309
+      ],
+      "basisZ": [
+        -0.0,
+        0.906309,
+        0.422616
+      ],
+      "size": [
+        5.2137,
+        3.81723
+      ],
+      "thickness": 0.931043,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "silver_key",
+      "texture": "../../images/silver_key.png",
+      "billboard": false
+    }
+  ]
+}

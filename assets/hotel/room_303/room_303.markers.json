@@ -1,0 +1,109 @@
+{
+  "room": "room_303",
+  "markers": [
+    {
+      "name": "PH_DOOR_303_9R",
+      "type": "DOOR",
+      "id": "9",
+      "position": [
+        148.338,
+        15.0,
+        -23.4646
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "R",
+      "openAngle": 1.4,
+      "style": "9",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_SPR_moon",
+      "type": "SPR",
+      "id": "moon",
+      "position": [
+        96.89945,
+        17.13345,
+        53.01595
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        5.2137,
+        3.8171
+      ],
+      "thickness": 0.9311,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "moon",
+      "texture": "../../images/moon.png",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_puzzle_303",
+      "type": "SPR",
+      "id": "puzzle_303",
+      "position": [
+        146.3878,
+        18.4641,
+        -9.5367
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "puzzle_303",
+      "texture": "sprites/puzzle_303.png",
+      "billboard": false
+    }
+  ]
+}

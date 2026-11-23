@@ -1,0 +1,319 @@
+{
+  "room": "room_lobby",
+  "markers": [
+    {
+      "name": "PH_SPR_lobby_6fgym",
+      "type": "SPR",
+      "id": "lobby_6fgym",
+      "position": [
+        254.9005,
+        20.4755,
+        -452.0215
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_6fgym",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_lobby_timeclue",
+      "type": "SPR",
+      "id": "lobby_timeclue",
+      "position": [
+        181.4221,
+        12.5121,
+        -422.2179
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisZ": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_timeclue",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_item_key1",
+      "type": "SPR",
+      "id": "item_key1",
+      "position": [
+        182.248575,
+        13.8831,
+        -451.1266
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        -0.939693,
+        0.34202,
+        0.0
+      ],
+      "basisZ": [
+        -0.34202,
+        -0.939693,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.000034
+      ],
+      "thickness": 1.000034,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "item_key1",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_item_paper",
+      "type": "SPR",
+      "id": "item_paper",
+      "position": [
+        182.248575,
+        13.8831,
+        -478.4644
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        -0.939693,
+        0.34202,
+        0.0
+      ],
+      "basisZ": [
+        -0.34202,
+        -0.939693,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.000034
+      ],
+      "thickness": 1.000034,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "item_paper",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_lobby_C4",
+      "type": "SPR",
+      "id": "lobby_C4",
+      "position": [
+        161.086,
+        23.3071,
+        -482.737
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_C4",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_lobby_C3",
+      "type": "SPR",
+      "id": "lobby_C3",
+      "position": [
+        161.086,
+        23.3071,
+        -462.494
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_C3",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_lobby_C2",
+      "type": "SPR",
+      "id": "lobby_C2",
+      "position": [
+        161.086,
+        23.3071,
+        -442.8359
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_C2",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_lobby_C1",
+      "type": "SPR",
+      "id": "lobby_C1",
+      "position": [
+        161.086,
+        23.3071,
+        -422.2179
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "lobby_C1",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_DOOR_lobby_ec",
+      "type": "DOOR",
+      "id": "lobby_ec",
+      "position": [
+        206.4624,
+        15.0,
+        -502.0711
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    }
+  ]
+}

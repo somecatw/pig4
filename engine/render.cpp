@@ -1,0 +1,551 @@
+#include "render.h"
+#include "utils.h"
+#include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <algorithm>
+#include "shader_interface.h"
+#include "assetmanager.h"
+using namespace std;
+
+FrameStat frameStat;
+
+namespace ShaderInternal{
+    vector<Vertex> vertices;
+    vector<Triangle> triangles;
+    CameraInfo camera;
+    uint *buffer;
+
+    uint pixelW, pixelH;
+
+    // (x, y, 4096.0f/z)
+    vector<Vertex> projectedVertices;
+
+    vector<Triangle2D> fragments;
+    vector<float> maxZInv;
+
+    // 调试用：第一阶段（alpha test）实际采样到的 UV / alpha / 贴图颜色。
+    std::vector<uint> debugStage1UV;
+    std::vector<uint> debugStage1Alpha;
+    std::vector<uint> debugStage1Tex;
+
+    // 调试用：正常 tile 渲染路径最终接受并写入 tile 的像素。
+    bool debugStage1Capture = false;
+    std::vector<uint> debugActualUV;
+    std::vector<uint> debugActualAlpha;
+    std::vector<uint> debugActualTex;
+}
+
+static bool g_debugUVCapture = false;
+
+using namespace ShaderInternal;
+
+ShadingBuffer shadingBuffer;
+
+Vertex vertexIntersect(const Vertex &a, const Vertex &b, const Plane &p){
+    Vec3 intersection = p.intersect(link(a.pos, b.pos));
+    float c = (intersection - a.pos).len() / (b.pos - a.pos).len();
+    Vec3 interpolatedUV = a.uv * (1.0f-c) + b.uv * c;
+    return {intersection, interpolatedUV};
+}
+
+class Renderer{
+private:
+
+
+public:
+    void vertexProject(){
+        projectedVertices.reserve(vertices.size());
+        Vec3 screenCenter = camera.pos + camera.focalLength * camera.frame.axisZ;
+        // qDebug()<<screenCenter.to_string();
+
+        for(const Vertex& v:vertices){
+            Vec3 ray = v.pos - camera.pos;
+            Vec3 projection = camera.pos + ray / ray.dot(camera.frame.axisZ) * camera.focalLength;
+
+            float zInv = 1024.0f / (ray.dot(camera.frame.axisZ));
+            // if(zInv < 0) throw runtime_error("point behind screen!");
+
+            float x2d = (projection - screenCenter).dot(camera.frame.axisX) / camera.screenSize.x * pixelW;
+            float y2d = (projection - screenCenter).dot(camera.frame.axisY) / camera.screenSize.y * pixelH;
+
+            x2d += pixelW/2;
+            y2d += pixelH/2;
+
+            Vec3 pos = {x2d, y2d, zInv};
+            Vec3 uv = v.uv * zInv;
+
+            projectedVertices.push_back({pos, uv});
+        }
+
+        maxZInv.resize(triangles.size());
+        for(int i=0;i<triangles.size();i++){
+            maxZInv[i] = max({projectedVertices[triangles[i].vid[0]].pos.z, projectedVertices[triangles[i].vid[1]].pos.z, projectedVertices[triangles[i].vid[2]].pos.z});
+        }
+    }
+    void frontClip(){
+        // 可能在 triangles 末尾填充切分出的新三角形
+        vector<pair<uint, Vertex>> front, back;
+
+        Vec3 screenCenter = camera.pos + camera.focalLength * camera.frame.axisZ;
+        Plane cameraPlane = {screenCenter, camera.frame.axisZ};
+        vector<Triangle> tmpTriangles;
+
+        for(auto [id, triangle]: enumerate(triangles)){
+
+            front.clear();
+            back.clear();
+
+            for(uint i=0;i<3;i++){
+                uint vid = triangle.vid[i];
+
+                float dist = (vertices[vid].pos - screenCenter).dot(camera.frame.axisZ);
+                if(dist >= 0)front.push_back({vid, vertices[vid]});
+                else back.push_back({vid, vertices[vid]});
+            }
+
+            if(front.size() == 3u) continue;
+            if(back.size() == 3u){
+                triangle.vid[0] = -1;
+                continue;
+            }
+            if(front.size() == 2u && back.size() == 1u){
+                Vertex int0 = vertexIntersect(front[0].second, back[0].second, cameraPlane);
+                Vertex int1 = vertexIntersect(front[1].second, back[0].second, cameraPlane);
+
+                uint id0 = vertices.size();
+                vertices.push_back(int0);
+                uint id1 = vertices.size();
+                vertices.push_back(int1);
+
+                Vec3 oldNorm = (vertices[triangle.vid[2]].pos - vertices[triangle.vid[0]].pos).cross(vertices[triangle.vid[1]].pos - vertices[triangle.vid[0]].pos);
+
+                triangle.vid[0] = front[0].first;
+                triangle.vid[1] = id0;
+                triangle.vid[2] = front[1].first;
+
+                Vec3 newNorm2 = (front[1].second.pos - int0.pos).cross(int1.pos - int0.pos);
+                Vec3 newNorm1 = (front[1].second.pos - front[0].second.pos).cross(int0.pos - front[0].second.pos);
+
+                Triangle tmp;
+                tmp.vid[0] = id0;
+                tmp.vid[1] = id1;
+                tmp.vid[2] = front[1].first;
+
+                if(newNorm2.dot(oldNorm) < 0) swap(tmp.vid[1], tmp.vid[2]);
+                if(newNorm1.dot(oldNorm) < 0) swap(triangle.vid[1], triangle.vid[2]);
+
+                tmp.materialID = triangle.materialID;
+                tmp.shaderConfig = triangle.shaderConfig;
+                tmpTriangles.push_back(tmp);
+                // if(int0.pos.y > 280)qDebug()<<back[0].second.pos.y;
+                continue;
+            }
+            if(front.size() == 1u && back.size() == 2u){
+                Vertex int0 = vertexIntersect(front[0].second, back[0].second, cameraPlane);
+                Vertex int1 = vertexIntersect(front[0].second, back[1].second, cameraPlane);
+
+                uint id0 = vertices.size();
+                vertices.push_back(int0);
+                uint id1 = vertices.size();
+                vertices.push_back(int1);
+
+                Vec3 oldNorm = (vertices[triangle.vid[2]].pos - vertices[triangle.vid[0]].pos).cross(vertices[triangle.vid[1]].pos - vertices[triangle.vid[0]].pos);
+                Vec3 newNorm = (int1.pos - front[0].second.pos).cross(int0.pos - front[0].second.pos);
+
+                triangle.vid[0] = front[0].first;
+                triangle.vid[1] = id0;
+                triangle.vid[2] = id1;
+
+                if(newNorm.dot(oldNorm) < 0) swap(triangle.vid[0], triangle.vid[1]);
+
+                continue;
+            }
+            throw runtime_error("how did we get here?");
+        }
+
+        triangles.erase(
+            remove_if(triangles.begin(), triangles.end(), [](const Triangle &t){return t.vid[0]==-1;}),
+            triangles.end()
+            );
+        for(const Triangle &t: tmpTriangles) triangles.push_back(t);
+    }
+    void getFragments(){
+        fragments.reserve(triangles.size());
+
+        for(auto [id, triangle]: enumerate(triangles)){
+
+            triangle.hardNormal = (vertices[triangle.vid[2]].pos - vertices[triangle.vid[0]].pos).cross(vertices[triangle.vid[1]].pos-vertices[triangle.vid[0]].pos);
+            triangle.hardNormal.normalize();
+
+            if(!(triangle.shaderConfig & ShaderConfig::DisableBackCulling)){
+
+                if(triangle.hardNormal.dot(vertices[triangle.vid[0]].pos - camera.pos) < 0) continue;
+            }
+
+            Vertex v0 = projectedVertices[triangle.vid[0]];
+            Vertex v1 = projectedVertices[triangle.vid[1]];
+            Vertex v2 = projectedVertices[triangle.vid[2]];
+
+            if(min({v0.pos.x, v1.pos.x, v2.pos.x}) >= pixelW || max({v0.pos.x, v1.pos.x, v2.pos.x}) <= 0) continue;
+            if(min({v0.pos.y, v1.pos.y, v2.pos.y}) >= pixelH || max({v0.pos.y, v1.pos.y, v2.pos.y}) <= 0) continue;
+
+            fragments.push_back(Triangle2D());
+            Triangle2D &current = fragments.back();
+
+            current.triangleID = id;
+
+            if(v0.pos.z < 0 || v1.pos.z < 0 || v2.pos.z < 0)
+                throw runtime_error("point behind screen!");
+
+            Vec3 e0 = v1.pos - v0.pos;
+            Vec3 e1 = v2.pos - v1.pos;
+            Vec3 e2 = v0.pos - v2.pos;
+
+            int direction = 0;
+            // 算一下直线方程的绕向
+            if(e0.cross(e1).z < 0)
+                direction = 1;
+
+            loadEdgeEquation(current.edgeIterator.e[0], v0.pos, e0, direction);
+            loadEdgeEquation(current.edgeIterator.e[1], v1.pos, e1, direction);
+            loadEdgeEquation(current.edgeIterator.e[2], v2.pos, e2, direction);
+
+            calcLinearCoefficient(current.zInv, v0.pos, e0, e2);
+            // qDebug()<<v0.pos.to_string()<<v1.pos.to_string()<<v2.pos.to_string();
+
+
+            current.xlt = max(0,             int(min({v0.pos.x, v1.pos.x, v2.pos.x})));
+            current.xrb = min((int)pixelW-1, int(max({v0.pos.x, v1.pos.x, v2.pos.x})));
+            current.ylt = max(0,             int(min({v0.pos.y, v1.pos.y, v2.pos.y})));
+            current.yrb = min((int)pixelH-1, int(max({v0.pos.y, v1.pos.y, v2.pos.y})));
+
+            // 算 uv
+            e0.z = v1.uv.x - v0.uv.x;
+            e2.z = v0.uv.x - v2.uv.x;
+            calcLinearCoefficient(current.u_z, {v0.pos.x, v0.pos.y, v0.uv.x}, e0, e2);
+
+            e0.z = v1.uv.y - v0.uv.y;
+            e2.z = v0.uv.y - v2.uv.y;
+            calcLinearCoefficient(current.v_z, {v0.pos.x, v0.pos.y, v0.uv.y}, e0, e2);
+
+        }
+    }
+    void parallelRasterization(){
+
+        taskDispatcher.init();
+        int cnt=0;
+        for(const Triangle2D &frag:fragments){
+            int tileXlt = frag.xlt / tileSize;
+            int tileYlt = frag.ylt / tileSize;
+            int tileXrb = frag.xrb / tileSize;
+            int tileYrb = frag.yrb / tileSize;
+
+            if(tileXlt < tileXrb || tileYlt < tileYrb){
+                cnt++;
+            }
+
+            // EdgeIterator edgeIt = frag.edgeIterator, tmp;
+            // for(auto [x, y]:product(range, range))
+            for(auto &&[x, y]:product(range(tileXlt, tileXrb+1), range(tileYlt, tileYrb+1))){
+
+                // int innerXlt = frag.xlt; //std::max(frag.xlt, x * tileSize);
+                // int innerXrb = frag.xrb; //std::min(frag.xrb, x * tileSize + tileSize-1);
+                // int innerYlt = frag.ylt; //std::max(frag.ylt, y * tileSize);
+                // int innerYrb = frag.yrb; //std::min(frag.yrb, y * tileSize + tileSize-1);
+
+                taskDispatcher.submitFragment(frag, x, y);
+                frameStat.tileFragmentSum ++;
+
+            }
+        }
+        taskDispatcher.finish();
+    }
+
+    void bfRasterization(){
+        for(const Triangle2D& frag:fragments){
+            ushort shaderConfig = triangles[frag.triangleID].shaderConfig;
+            if(shaderConfig & ShaderConfig::WireframeOnly)
+                segmentRasterization<WireframeShader>(frag, pixelW, pixelH);
+            else if (shaderConfig & ShaderConfig::MonoChrome)
+                segmentRasterization<MonoChromeShader>(frag, pixelW, pixelH);
+            else
+                segmentRasterization<BaseShader>(frag, pixelW, pixelH);
+        }
+    }
+    void determineColor(){
+        Vec3 view = camera.pos + camera.focalLength*camera.frame.axisZ
+                    - camera.screenSize.x/2 * camera.frame.axisX
+                    - camera.screenSize.y/2 * camera.frame.axisY;
+
+        Vec3 dx = 1.0f / pixelW * camera.screenSize.x * camera.frame.axisX;
+        Vec3 dy = 1.0f / pixelH * camera.screenSize.y * camera.frame.axisY;
+
+        Vec3 sunLight = {1, -1, -1};
+        sunLight.normalize();
+
+        for(uint y = 0; y < pixelH; y++)
+        {
+            Vec3 tmpView = view;
+            for(uint x = 0; x < pixelW; x++){
+                uint colorRef = 0xff000000;
+
+                if(shadingBuffer.triangleID[y][x] < 0x80000000){
+                    ushort shaderConfig = triangles[shadingBuffer.triangleID[y][x]].shaderConfig;
+
+                    float u = shadingBuffer.u_z[y][x] / shadingBuffer.zInv[y][x];
+                    float v = shadingBuffer.v_z[y][x] / shadingBuffer.zInv[y][x];
+
+                    // 静态转发逻辑
+                    if(shaderConfig & ShaderConfig::WireframeOnly)
+                        colorRef = colorDetermination<WireframeShader>(u, v, shadingBuffer.triangleID[y][x], tmpView);
+                    else if (shaderConfig & ShaderConfig::MonoChrome)
+                        colorRef = colorDetermination<MonoChromeShader>(u, v, shadingBuffer.triangleID[y][x], tmpView);
+                    else
+                        colorRef = colorDetermination<BaseShader>(u, v, shadingBuffer.triangleID[y][x], tmpView);
+
+                    if(!(shaderConfig & ShaderConfig::DisableLightModel)){
+                        // 对于简单光照，这一步可以提前；
+                        // 如果是平滑光照，则需要逐像素的法线插值，但也不需要在这里算
+                        float lightIntensity = -sunLight.dot(triangles[shadingBuffer.triangleID[y][x]].hardNormal) * 0.5f + 0.5f;
+                        // colorRef = simpleLightBlend(colorRef, lightIntensity);
+                    }
+                }
+                tmpView += dy;
+
+                // if(x%64==0 || y%64==0) colorRef = 0xffff0000;
+                buffer[y*pixelW + x] = colorRef;
+            }
+            view += dx;
+        }
+    }
+    // 独立于正常渲染路径的调试 pass：只处理 UseAlphaBitmap 三角形，
+    // 用与 tileRasterization 相同的 u_z/v_z/zInv 还原 alpha test 实际采样的 UV。
+    void debugRasterizeStage1UVs(){
+        const size_t pixelCount = size_t(pixelW) * size_t(pixelH);
+        debugStage1UV.assign(pixelCount, 0xff000000u);
+        debugStage1Alpha.assign(pixelCount, 0xff000000u);
+        debugStage1Tex.assign(pixelCount, 0xff000000u);
+
+        const size_t materialCount = assetManager.getMaterials().size();
+        for(const Triangle2D &frag : fragments){
+            const Triangle &tri = triangles[frag.triangleID];
+            if(!(tri.shaderConfig & ShaderConfig::UseAlphaBitmap)) continue;
+            if(tri.materialID >= materialCount) continue;
+
+            const Material &material = assetManager.getMaterials()[tri.materialID];
+            if(material.mipmap2.empty()) continue;
+            const TextureMap &texture = material.mipmap2[0];
+            const int w = texture.w, h = texture.h;
+            if(w <= 0 || h <= 0) continue;
+
+            for(int y = frag.ylt; y <= frag.yrb; ++y){
+                EdgeIterator edgeIt = frag.edgeIterator;
+                Iterator2D zInv = frag.zInv;
+                Iterator2D u_z = frag.u_z;
+                Iterator2D v_z = frag.v_z;
+                edgeIt.batchIterate(frag.xlt, y);
+                zInv.batchIterate(frag.xlt, y);
+                u_z.batchIterate(frag.xlt, y);
+                v_z.batchIterate(frag.xlt, y);
+
+                for(int x = frag.xlt; x <= frag.xrb; ++x){
+                    if(edgeIt.check() == EdgeIterator::INNER && zInv.val > 0.0f){
+                        const float invZ = 1.0f / zInv.val;
+                        const float u = u_z.val * invZ;
+                        const float v = v_z.val * invZ;
+                        const uint tx = uint(int(u * w)) & uint(w - 1);
+                        const uint ty = uint(int(v * h)) & uint(h - 1);
+                        const uint c00 = texture.pixel(tx, ty);
+                        const size_t idx = size_t(y) * size_t(pixelW) + size_t(x);
+
+                        // R = u, G = v；越界时 clamp，方便直接看出插值异常。
+                        const uint ru = uint(std::clamp(u, 0.0f, 1.0f) * 255.0f);
+                        const uint gv = uint(std::clamp(v, 0.0f, 1.0f) * 255.0f);
+                        debugStage1UV[idx] = 0xff000000u | (ru << 16) | (gv << 8);
+
+                        const uint alpha = c00 >> 24;
+                        debugStage1Alpha[idx] = 0xff000000u
+                                              | (alpha << 16) | (alpha << 8) | alpha;
+                        debugStage1Tex[idx] = 0xff000000u | (c00 & 0x00ffffffu);
+                    }
+                    edgeIt.xIterate();
+                    zInv.xIterate();
+                    u_z.xIterate();
+                    v_z.xIterate();
+                }
+            }
+        }
+    }
+
+    void drawFrame(const CameraInfo &_camera, uint *_buffer){
+        // vertices   = _vertices;
+        // triangles = _triangles;
+        camera = _camera;
+        buffer = _buffer;
+        projectedVertices.clear();
+        fragments.clear();
+
+        if(!BaseShader::lg2[255]){
+            for(int i=1;i<256;i++){
+                BaseShader::lg2[i] = int(ceil(log2(i+1)));
+            }
+            for(int i=1;i<4096;i++){
+                BaseShader::lg2f[i] = log2(i/16.0f);
+            }
+        }
+
+        pixelW = camera.width * tileSize;
+        pixelH = camera.height * tileSize;
+
+        if(pixelW > ShadingBuffer::W)
+            throw runtime_error("width "+to_string(pixelW)+" is too wide for buffer");
+        if(pixelH > ShadingBuffer::H)
+            throw runtime_error("height "+to_string(pixelH)+" is too high for buffer");
+
+        // for(uint j=0;j<pixelH;j++)
+        // {
+        //     for(uint i=0;i<pixelW;i++){
+        //         shadingBuffer.zInv[j][i] = 0.0f;
+        //         shadingBuffer.triangleID[j][i] = 0x80000000u;
+        //     }
+        // }
+        auto t0 = std::chrono::system_clock::now();
+        frontClip();
+        auto t1 = std::chrono::system_clock::now();
+        if(showStatistics) qDebug()<<"stage1: frontclip         |"<<t1-t0;
+        vertexProject();
+        auto t2 = std::chrono::system_clock::now();
+        if(showStatistics) qDebug()<<"stage2: vertexProject     |"<<t2-t1;
+        getFragments();
+        auto t3 = std::chrono::system_clock::now();
+        if(showStatistics) qDebug()<<"stage3: getFragments      |"<<t3-t2;
+
+        decltype(t3-t2) total;
+        static vector<chrono::microseconds> frametimes;
+
+        frameStat.vcnt = vertices.size();
+        frameStat.tcnt = triangles.size();
+        frameStat.tileFragmentSum = 0;
+        frameStat.pixelIterated = 0;
+
+        if(1){
+            if(g_debugUVCapture){
+                const size_t pixelCount = size_t(pixelW) * size_t(pixelH);
+                debugActualUV.assign(pixelCount, 0xff000000u);
+                debugActualAlpha.assign(pixelCount, 0xff000000u);
+                debugActualTex.assign(pixelCount, 0xff000000u);
+            }
+            parallelRasterization();
+            if(g_debugUVCapture)
+                debugRasterizeStage1UVs();
+            auto t4 = std::chrono::system_clock::now();
+            if(showStatistics) qDebug()<<"stage4&5: parallel render |"<<t4-t3;
+            total = t4-t0;
+        }else{
+            bfRasterization();
+            auto t4 = std::chrono::system_clock::now();
+            if(showStatistics) qDebug()<<"stage4: rasterization     |"<<t4-t3;
+            determineColor();
+            auto t5 = std::chrono::system_clock::now();
+            if(showStatistics) qDebug()<<"stage5: color             |"<<t5-t4;
+            total = t5-t0;
+        }
+        if(showStatistics) qDebug()<<"---------------------------------";
+        if(showStatistics) qDebug()<<"total                     |"<<total;
+
+        frametimes.push_back(chrono::duration_cast<chrono::microseconds>(total));
+        if(frametimes.size() > 100u)
+            frametimes.erase(frametimes.begin());
+
+        chrono::microseconds avg = std::accumulate(frametimes.begin(), frametimes.end(), chrono::microseconds(0)) / frametimes.size();
+        int64_t var = 0;
+
+        frameStat.fps = 1e6 / avg.count();
+        for(auto x:frametimes){
+            int64_t v = x.count();
+            var += v*v;
+        }
+        var /= frametimes.size();
+        var -= avg.count()*avg.count();
+        var = sqrt(var);
+
+        if(showStatistics) {
+            qDebug()<<"total(200 frames avg)     |"<<avg;
+            qDebug()<<"sqrt variance             |"<<var;
+
+            // 土法 profiling
+            qDebug()<<"---------------------------------";
+            qDebug()<<"statistics:";
+            qDebug()<<"vertex                    |"<<frameStat.vcnt;
+            qDebug()<<"triangle                  |"<<frameStat.tcnt;
+            qDebug()<<"tiled triangle part       |"<<frameStat.tileFragmentSum;
+            qDebug()<<"iterated pixel            |"<<frameStat.pixelIterated;
+        }
+    }
+    friend void clearRenderBuffer();
+    friend void submitMesh(const Mesh &mesh);
+}renderer;
+
+void drawFrame(const CameraInfo &camera, uint *buffer){
+    renderer.drawFrame(camera, buffer);
+}
+
+void setDebugUVCapture(bool enabled){
+    g_debugUVCapture = enabled;
+    debugStage1Capture = enabled;
+}
+
+void dumpDebugUV(const QString &prefix){
+    const size_t pixelCount = size_t(pixelW) * size_t(pixelH);
+    if(pixelW == 0 || pixelH == 0 || debugStage1UV.size() != pixelCount){
+        qWarning() << "debug UV buffers are empty; no frame captured yet";
+        return;
+    }
+
+    const QFileInfo info(prefix);
+    if(!info.absolutePath().isEmpty())
+        QDir().mkpath(info.absolutePath());
+
+    auto save = [&](const QString &suffix, const std::vector<uint> &data){
+        QImage img(reinterpret_cast<const uchar*>(data.data()),
+                   int(pixelW), int(pixelH), QImage::Format_ARGB32);
+        const QString path = prefix + suffix;
+        if(img.save(path))
+            qDebug() << "saved stage1 debug image:" << path;
+        else
+            qWarning() << "failed to save stage1 debug image:" << path;
+    };
+
+    save(QStringLiteral("_stage1_uv.png"), debugStage1UV);
+    save(QStringLiteral("_stage1_alpha.png"), debugStage1Alpha);
+    save(QStringLiteral("_stage1_tex.png"), debugStage1Tex);
+    if(debugActualUV.size() == pixelCount){
+        save(QStringLiteral("_stage1_actual_uv.png"), debugActualUV);
+        save(QStringLiteral("_stage1_actual_alpha.png"), debugActualAlpha);
+        save(QStringLiteral("_stage1_actual_tex.png"), debugActualTex);
+    }
+}
+
+void clearRenderBuffer(){
+    vertices.clear();
+    triangles.clear();
+
+}
+
+void submitMesh(const Mesh &mesh){
+    uint n = vertices.size();
+    for(const Vertex &v:mesh.vertices){
+        vertices.push_back(v);
+    }
+    for(const Triangle &t:mesh.triangles){
+        triangles.push_back(t);
+        Triangle &curr = triangles.back();
+
+        curr.materialID = mesh.materialID;
+        curr.shaderConfig = mesh.shaderConfig;
+        curr.vid[0] += n;
+        curr.vid[1] += n;
+        curr.vid[2] += n;
+    }
+}

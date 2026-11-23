@@ -1,0 +1,63 @@
+{
+  "items": {
+    "moon_block": {
+      "name": "月亮积木",
+      "content": "moon_block",
+      "views": [
+        { "image": "moon.png", "caption": "一块月亮形状的积木。" },
+        { "image": "moon_block_back.png", "caption": "积木背面还有一串数字。" }
+      ]
+    },
+    "paper": {
+      "name": "纸团",
+      "content": "paper"
+    },
+    "silver_key": {
+      "name": "银质小钥匙",
+      "views": [
+        { "image": "silver_key.png", "caption": "一把银质小钥匙。" }
+      ]
+    },
+    "remote": {
+      "name": "遥控器",
+      "views": [
+        { "image": "remote.png", "caption": "一个遥控器。电池仓是空的。" }
+      ],
+      "combines": [
+        {
+          "with": "battery",
+          "result": "remote_with_battery",
+          "notice": "把电池装进了遥控器。"
+        }
+      ]
+    },
+    "battery": {
+      "name": "电池",
+      "views": [
+        { "image": "battery.png", "caption": "一节电池。" }
+      ],
+      "combines": [
+        {
+          "with": "remote",
+          "result": "remote_with_battery",
+          "notice": "把电池装进了遥控器。"
+        }
+      ]
+    },
+    "remote_with_battery": {
+      "name": "遥控器",
+      "views": [
+        { "image": "remote.png", "caption": "装上了电池的遥控器。" }
+      ]
+    },
+    "door_card": {
+      "name": "门禁卡",
+      "views": [
+        { "image": "door_card.png", "caption": "一张门禁卡。" }
+      ]
+    },
+    "key_1": {
+      "name": "1号钥匙"
+    }
+  }
+}

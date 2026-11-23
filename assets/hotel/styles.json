@@ -1,0 +1,22 @@
+{
+  "doors": {
+    "default": {
+      "scene": "shared/props/door_9_engine.obj",
+      "openAngle": 1.57
+    },
+    "9": {
+      "scene": "shared/props/door_9_engine.obj",
+      "openAngle": 1.57
+    }
+  },
+  "windows": {
+    "default": {
+      "scene": "shared/props/window_1_engine.obj",
+      "openAngle": 1.57
+    },
+    "1": {
+      "scene": "shared/props/window_1_engine.obj",
+      "openAngle": 1.57
+    }
+  }
+}

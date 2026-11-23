@@ -1,0 +1,21 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release (UTF-8 header deps)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS": "/DWIN32 /D_WINDOWS /GR /EHsc /utf-8"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "msvc-release",
+      "configurePreset": "msvc-release"
+    }
+  ]
+}

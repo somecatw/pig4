@@ -1,0 +1,299 @@
+{
+  "building": "hotel",
+  "scale": 28.0,
+  "flipX": true,
+  "floorOffsetY": -2.3328,
+  "anchorRoom": "room_301",
+  "rooms": [
+    {
+      "id": "room_301",
+      "scene": "room_301/room_301_engine.obj",
+      "markers": "room_301/room_301.markers.json",
+      "cell": [0, 0, 0],
+      "yaw": 0.0
+    },
+    {
+      "id": "room_303",
+      "scene": "room_303/room_303_engine.obj",
+      "markers": "room_303/room_303.markers.json",
+      "cell": [1, 0, 0],
+      "yaw": 0.0
+    },
+    {
+      "id": "room_1wcorridor",
+      "label": "一楼·西走廊",
+      "scene": "room_1wcorridor/room_1wcorridor_engine.obj",
+      "markers": "room_1wcorridor/room_1wcorridor.markers.json",
+      "cell": [2, 0, -2],
+      "yaw": 0.0
+    },
+    {
+      "id": "room_lobby",
+      "label": "一楼·大堂",
+      "scene": "room_lobby/room_lobby_engine.obj",
+      "markers": "room_lobby/room_lobby.markers.json",
+      "cell": [2, -1, -2],
+      "yaw": 0.0
+    },
+    {
+      "id": "room_3wcorridor",
+      "label": "三楼·西走廊",
+      "scene": "room_3wcorridor/room_3wcorridor_engine.obj",
+      "markers": "room_3wcorridor/room_3wcorridor.markers.json",
+      "cell": [2, 0, 0],
+      "yaw": 0.0
+    },
+    {
+      "id": "room_5wcorridor",
+      "label": "五楼·西走廊",
+      "scene": "room_5wcorridor/room_5wcorridor_engine.obj",
+      "markers": "room_5wcorridor/room_5wcorridor.markers.json",
+      "cell": [2, 0, 2],
+      "yaw": 0.0
+    }
+  ],
+  "puzzles": [
+    {
+      "room": "room_303",
+      "marker": "puzzle_303",
+      "kind": "keypad",
+      "interactive": true,
+      "title": "机关",
+      "prompt": "交互",
+      "solution": "9132",
+      "event": "puzzle_303.solved",
+      "solvedText": "密码正确，门锁解除"
+    },
+    {
+      "room": "room_1wcorridor",
+      "marker": "elevator_panel_1F",
+      "kind": "elevator_panel",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "选择楼层",
+      "floors": ["1F", "3F", "5F"]
+    },
+    {
+      "room": "room_3wcorridor",
+      "marker": "elevator_panel_3F",
+      "kind": "elevator_panel",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "选择楼层",
+      "floors": ["1F", "3F", "5F"]
+    },
+    {
+      "room": "room_5wcorridor",
+      "marker": "elevator_panel_5F",
+      "kind": "elevator_panel",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "选择楼层",
+      "floors": ["1F", "3F", "5F"]
+    },
+    {
+      "room": "room_1wcorridor",
+      "marker": "call_elevator_1F",
+      "kind": "elevator_call",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "按电梯"
+    },
+    {
+      "room": "room_3wcorridor",
+      "marker": "call_elevator_3F",
+      "kind": "elevator_call",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "按电梯"
+    },
+    {
+      "room": "room_5wcorridor",
+      "marker": "call_elevator_5F",
+      "kind": "elevator_call",
+      "interactive": true,
+      "title": "电梯",
+      "prompt": "按电梯"
+    },
+    {
+      "room": "room_3wcorridor",
+      "marker": "puzzle_3W",
+      "kind": "shard_pink",
+      "interactive": true,
+      "title": "粉色碎片",
+      "prompt": "查看",
+      "item": "shard_pink",
+      "filled": true
+    },
+    {
+      "room": "room_5wcorridor",
+      "marker": "5W_puzzle1",
+      "kind": "letter_keypad",
+      "interactive": true,
+      "title": "密码器",
+      "prompt": "输入密码",
+      "solution": "retaw",
+      "keys": ["a", "b", "c", "d", "e", "f", "r", "s", "t", "w", "z", "C"],
+      "columns": 3,
+      "clearKey": "C",
+      "event": "5W_puzzle1.solved",
+      "solvedText": "密码正确，门锁解除",
+      "errorText": "没有反应……"
+    }
+  ],
+  "portals": [
+    {
+      "id": "bath_window_301_303",
+      "from": "room_301",
+      "marker": "window_1",
+      "to": "room_303",
+      "kind": "window",
+      "ends": {
+        "room_301": {
+          "pos": [30.0, 17.7, -27.2],
+          "lookAt": [15.0, 14.0, -27.2]
+        },
+        "room_303": {
+          "pos": [55.0, 17.7, -27.2],
+          "lookAt": [85.0, 14.0, -27.2]
+        }
+      }
+    }
+  ],
+  "locks": [
+    {
+      "room": "room_301",
+      "marker": "9",
+      "type": "key",
+      "id": "key_8",
+      "label": "8号钥匙"
+    },
+    {
+      "room": "room_303",
+      "marker": "9",
+      "type": "event",
+      "id": "",
+      "label": "机关"
+    },
+    {
+      "room": "room_301",
+      "marker": "window_1",
+      "type": "key",
+      "id": "silver_key",
+      "label": "银质小钥匙"
+    },
+    {
+      "room": "room_3wcorridor",
+      "marker": "305W",
+      "type": "key",
+      "id": "key_6",
+      "label": "6号钥匙"
+    },
+    {
+      "room": "room_5wcorridor",
+      "marker": "5W_billard",
+      "type": "key",
+      "id": "key_8",
+      "label": "8号钥匙"
+    },
+    {
+      "room": "room_5wcorridor",
+      "marker": "5W_lifesong",
+      "type": "key",
+      "id": "key_1",
+      "label": "1号钥匙"
+    },
+    {
+      "room": "room_1wcorridor",
+      "marker": "1W_lounge",
+      "type": "key",
+      "id": "key_4",
+      "label": "4号钥匙"
+    },
+    {
+      "room": "room_1wcorridor",
+      "marker": "1W_lobby",
+      "type": "key",
+      "id": "key_1",
+      "label": "1号钥匙",
+      "directRoom": "room_1wcorridor"
+    },
+    {
+      "room": "room_lobby",
+      "marker": "lobby_ec",
+      "type": "key",
+      "id": "key_3",
+      "label": "3号钥匙"
+    }
+  ],
+  "connections": [
+    {
+      "event": "puzzle_303.solved",
+      "room": "room_303",
+      "marker": "9",
+      "action": "unlock"
+    },
+    {
+      "event": "shard_pink.removed",
+      "room": "room_303",
+      "marker": "9",
+      "action": "lock"
+    },
+    {
+      "event": "shard_pink.inserted",
+      "room": "room_303",
+      "marker": "9",
+      "action": "unlock"
+    },
+    {
+      "event": "5W_puzzle1.solved",
+      "room": "room_5wcorridor",
+      "marker": "5W_billard",
+      "action": "unlock"
+    }
+  ],
+  "interactions": [
+    {
+      "room": "room_lobby",
+      "marker": "maindoor",
+      "prompt": "查看 大门",
+      "notice": "酒店大门被封死了。"
+    }
+  ],
+  "clocks": [
+    { "room": "room_lobby", "marker": "lobby_C1", "hour": 12, "minute": 0 },
+    { "room": "room_lobby", "marker": "lobby_C2", "hour": 3, "minute": 0 },
+    { "room": "room_lobby", "marker": "lobby_C3", "hour": 6, "minute": 0 },
+    { "room": "room_lobby", "marker": "lobby_C4", "hour": 9, "minute": 0 }
+  ],
+  "textSprites": [
+    {
+      "room": "room_lobby",
+      "marker": "lobby_timeclue",
+      "text": "ABC...VWXABC...VWX=day*2",
+      "font": "Consolas",
+      "pixelSize": 44,
+      "color": "#2b2620",
+      "background": "#efe7d6",
+      "width": 512,
+      "height": 512,
+      "rotate": 90
+    }
+  ],
+  "pickups": [
+    {
+      "room": "room_lobby",
+      "marker": "item_key1",
+      "item": "key_1",
+      "name": "1号钥匙",
+      "icon": "key:1"
+    },
+    {
+      "room": "room_lobby",
+      "marker": "item_paper",
+      "item": "paper",
+      "name": "纸团",
+      "icon": "paper_fold.png"
+    }
+  ]
+}
