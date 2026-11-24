@@ -142,13 +142,17 @@ std::optional<BoxtestResult> lowLevelBoxIntersect(const BVHLeaf<Triangle> &leaf,
 }
 
 
-void RaytestManager::buildStaticBVH(const QList<Mesh> &lst){
+BVHTree<Triangle> buildStaticBVHFromMeshes(const QList<Mesh> &lst){
     vector<BVHLeaf<Triangle>> v;
     for(const Mesh &mesh:lst){
         vector<BVHLeaf<Triangle>> dog = toLeafVec(mesh);
         for(const BVHLeaf<Triangle> &t:dog)v.push_back(t);
     }
-    staticSceneBVH = BVHTree<Triangle>(v);
+    return BVHTree<Triangle>(v);
+}
+
+void RaytestManager::buildStaticBVH(const QList<Mesh> &lst){
+    staticSceneBVH = buildStaticBVHFromMeshes(lst);
 }
 
 std::set<BoxtestResult> RaytestManager::sceneBoxIntersect(const BBox3D &box)const{

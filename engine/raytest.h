@@ -195,7 +195,7 @@ private:
             if(id < mid) l = l.merge(leaves[x].box);
             else         r = r.merge(leaves[x].box);
         if(dim == 0) return (r.x1-l.x2) / (l.x2+r.x2-l.x1-r.x1);
-        if(dim == 1) return (r.y1-l.z2) / (l.y2+r.y2-l.y1-r.y1);
+        if(dim == 1) return (r.y1-l.y2) / (l.y2+r.y2-l.y1-r.y1);
         else         return (r.z1-l.z2) / (l.z2+r.z2-l.z1-r.z1);
     }
     void build(int rt, std::vector<uint> &idx){
@@ -277,6 +277,8 @@ public:
     friend class RaytestManager;
 };
 
+
+BVHTree<Triangle> buildStaticBVHFromMeshes(const QList<Mesh> &meshes);
 
 class RaytestManager{
 public:

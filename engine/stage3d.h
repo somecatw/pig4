@@ -2,6 +2,7 @@
 #define STAGE3D_H
 
 #include <QHash>
+#include <QList>
 #include <QWidget>
 #include "assetmanager.h"
 #include "gameobject.h"
@@ -51,7 +52,11 @@ public:
     double avgRenderTime;
 
     void updateFrame();
+    // 调试场景/无 RoomManager 时仍可构建全局 BVH；房间模式改用每房间 BVH。
     void buildStaticBVH();
+    // 当前参与静态碰撞/遮挡查询的房间 BVH；端口指向 Room 持有的树。
+    void setActiveStaticCollisionTrees(
+        const QList<const BVHTree<Triangle>*> &trees);
     GameObject *loadObj(const QString &path, bool isStatic=false);
     // 注册运行时生成的网格（manifest sprite 等），同时建立射线测试 BVH
     int addRuntimeMesh(const Mesh &mesh);
@@ -70,7 +75,10 @@ public:
     void removeDynamicCollider(int id);
 
     // F3 / 调试面板用的只读统计。
-    int staticBVHNodeCount() const { return int(raytestManager.staticSceneBVH.size()); }
+    int staticBVHNodeCount() const;
+    int activeStaticCollisionCount() const {
+        return int(m_activeStaticCollisionTrees.size());
+    }
     int runtimeMeshCount() const { return int(assetManager.getMeshes().size()); }
     int materialCount() const { return int(assetManager.getMaterials().size()); }
     int dynamicColliderCount() const { return dynamicColliders.size(); }
@@ -86,6 +94,7 @@ private:
 
     // AssetManager assetManager;
     RaytestManager raytestManager;
+    QList<const BVHTree<Triangle>*> m_activeStaticCollisionTrees;
     QHash<int, DynamicBoxCollider> dynamicColliders;
     int nextDynamicColliderId = 1;
 

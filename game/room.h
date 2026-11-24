@@ -3,6 +3,7 @@
 
 #include "buildingmanifest.h"
 #include "gameobject.h"
+#include "raytest.h"
 
 class Door;
 class Hotspot;
@@ -43,6 +44,7 @@ public:
     Vec3 localMin;
     Vec3 localMax;
     Vec3 localCenter;
+    BVHTree<Triangle> staticBVH;
 };
 
 #endif // ROOM_H

@@ -48,6 +48,12 @@ public:
     void updateRenderRooms(const QString &currentRoomId);
     QStringList renderRoomIds() const { return m_renderRoomIds; }
 
+    // L1：按房间建立静态 BVH；碰撞/静态遮挡只查询 current、同层直接相邻
+    // 房间和 verticalLinks 的另一侧。动态碰撞体仍由 Stage3D 全局处理。
+    void buildStaticCollisionBVHs();
+    void updateCollisionRooms(const QString &currentRoomId);
+    QStringList collisionRoomIds() const { return m_collisionRoomIds; }
+
 private:
     Room *loadRoomScene(const RoomDef &def);
     void createRoomObjects(Room *room);
@@ -62,6 +68,8 @@ private:
     QList<Room*> m_roomOrder;
     QString m_renderRoomId;
     QStringList m_renderRoomIds;
+    QString m_collisionRoomId;
+    QStringList m_collisionRoomIds;
     DoorSystem m_doorSystem;
     GameEvents m_events;
     QList<InteractTarget> m_interactables;

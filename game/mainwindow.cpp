@@ -247,7 +247,13 @@ MainWindow::MainWindow(QWidget *parent)
         camera->setTransform(defaultCam);
         camera->updatePosition(defaultCam);
     }
-    stage->buildStaticBVH();
+    if (roomManager != nullptr) {
+        // updateFrame 先把房间世界变换应用到 actor->mesh，再按房间建 BVH。
+        stage->updateFrame();
+        roomManager->buildStaticCollisionBVHs();
+    } else {
+        stage->buildStaticBVH();
+    }
 
     if (roomManager != nullptr) {
         if (Room *r = roomManager->roomAt(camera->camInfo.pos))
@@ -537,8 +543,10 @@ void MainWindow::showGameNotice(const QString &text, int durationMs)
 
 void MainWindow::updateRoomUi()
 {
-    if (roomManager != nullptr)
+    if (roomManager != nullptr) {
         roomManager->updateRenderRooms(currentRoom);
+        roomManager->updateCollisionRooms(currentRoom);
+    }
     checkRoomStoryTriggers();
     if (roomLabel == nullptr) return;
     if (currentRoom.isEmpty()) {
@@ -1931,6 +1939,8 @@ void MainWindow::updateDebugOverlay()
     }
     const QStringList renderRooms = roomManager != nullptr
         ? roomManager->renderRoomIds() : QStringList();
+    const QStringList collisionRooms = roomManager != nullptr
+        ? roomManager->collisionRoomIds() : QStringList();
 
     QString selected = QStringLiteral("—");
     if (inventoryIndex >= 0 && inventoryIndex < inventory.size()) {
@@ -1961,6 +1971,12 @@ void MainWindow::updateDebugOverlay()
     right << QStringLiteral("  %1")
         .arg(renderRooms.isEmpty() ? QStringLiteral("—")
                                    : renderRooms.join(QStringLiteral(", ")));
+    right << QStringLiteral("Collision: %1 / %2 rooms")
+        .arg(collisionRooms.size())
+        .arg(roomManager != nullptr ? roomManager->rooms().size() : 0);
+    right << QStringLiteral("  %1")
+        .arg(collisionRooms.isEmpty() ? QStringLiteral("—")
+                                      : collisionRooms.join(QStringLiteral(", ")));
     right << QStringLiteral("Building: %1 rooms · %2 portals · %3 locks · %4 conn · %5 vert")
         .arg(roomManager != nullptr ? roomManager->rooms().size() : 0)
         .arg(building.portals.size()).arg(building.locks.size())
@@ -1980,7 +1996,7 @@ void MainWindow::updateDebugOverlay()
         .arg(frameStat.vcnt).arg(frameStat.tcnt).arg(frameStat.tileFragmentSum);
     right << QStringLiteral("Pixels: %1")
         .arg(QString::number(frameStat.pixelIterated.load()));
-    right << QStringLiteral("BVH: %1 nodes · meshes %2 · materials %3")
+    right << QStringLiteral("BVH: %1 active nodes · meshes %2 · materials %3")
         .arg(stage->staticBVHNodeCount()).arg(stage->runtimeMeshCount())
         .arg(stage->materialCount());
     right << QStringLiteral("Dynamic colliders: %1").arg(stage->dynamicColliderCount());

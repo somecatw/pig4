@@ -210,6 +210,22 @@ SceneRayHit Stage3D::raytest(const Ray &ray)const{
 }
 
 StaticRayHit Stage3D::raytestStatic(const Ray &ray)const{
+    if (!m_activeStaticCollisionTrees.isEmpty()) {
+        StaticRayHit best;
+        best.dis = 1e30f;
+        for (const BVHTree<Triangle> *tree : m_activeStaticCollisionTrees) {
+            if (tree == nullptr)
+                continue;
+            const auto hit = tree->intersect(ray);
+            if (hit.hit && hit.dis < best.dis) {
+                best.hit = true;
+                best.dis = hit.dis;
+                best.pos = hit.pos;
+            }
+        }
+        return best;
+    }
+
     if(raytestManager.staticSceneBVH.size() == 0) return {};
     auto hit = raytestManager.staticSceneBVH.intersect(ray);
     return {hit.hit, hit.dis, hit.pos};
@@ -309,7 +325,16 @@ BBox3D boxTransform(const BBox3D &box, const Transform &transform){
     return ret;
 }
 set<BoxtestResult> Stage3D::boxtest(const BBox3D &box)const{
-    set<BoxtestResult> result = raytestManager.sceneBoxIntersect(box);
+    set<BoxtestResult> result;
+    if (!m_activeStaticCollisionTrees.isEmpty()) {
+        for (const BVHTree<Triangle> *tree : m_activeStaticCollisionTrees) {
+            if (tree == nullptr)
+                continue;
+            result.merge(tree->boxIntersect(box));
+        }
+    } else {
+        result = raytestManager.sceneBoxIntersect(box);
+    }
     for (auto it = dynamicColliders.constBegin(); it != dynamicColliders.constEnd(); ++it) {
         if (!it.value().enabled)
             continue;
@@ -348,6 +373,25 @@ void Stage3D::buildStaticBVH(){
         else return {};
     }));
     qDebug()<<"scene static BVH built:"<<raytestManager.staticSceneBVH.size();
+}
+
+void Stage3D::setActiveStaticCollisionTrees(
+    const QList<const BVHTree<Triangle>*> &trees)
+{
+    m_activeStaticCollisionTrees = trees;
+}
+
+int Stage3D::staticBVHNodeCount() const
+{
+    if (m_activeStaticCollisionTrees.isEmpty())
+        return int(raytestManager.staticSceneBVH.size());
+
+    int nodes = 0;
+    for (const BVHTree<Triangle> *tree : m_activeStaticCollisionTrees) {
+        if (tree != nullptr)
+            nodes += int(tree->size());
+    }
+    return nodes;
 }
 
 GameObject *Stage3D::loadObj(const QString &path, bool isStatic){

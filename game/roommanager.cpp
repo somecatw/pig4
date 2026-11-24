@@ -516,6 +516,9 @@ RoomManager::RoomManager(Stage3D *stage)
 
 RoomManager::~RoomManager()
 {
+    // Room 销毁后它持有的 BVH 指针会失效。
+    if (m_stage != nullptr)
+        m_stage->setActiveStaticCollisionTrees({});
     qDeleteAll(m_puzzles);
     m_puzzles.clear();
     if (m_buildingRoot != nullptr) {
@@ -607,6 +610,73 @@ void RoomManager::updateRenderRooms(const QString &currentRoomId)
             m_renderRoomIds.push_back(room->def.id);
     }
     qDebug() << "render rooms for" << currentRoomId << ":" << m_renderRoomIds;
+}
+
+void RoomManager::buildStaticCollisionBVHs()
+{
+    for (Room *room : m_roomOrder) {
+        if (room == nullptr || room->sceneRoot == nullptr)
+            continue;
+        const QList<Mesh> meshes = room->sceneRoot->forEach(
+            [](const MeshActor *actor) -> Mesh {
+                return actor->isStatic ? actor->mesh : Mesh{};
+            });
+        room->staticBVH = buildStaticBVHFromMeshes(meshes);
+        qDebug() << "room static BVH:" << room->def.id
+                 << room->staticBVH.size() << "nodes";
+    }
+    // 重新建树后强制下一次 updateRoomUi 重新提交 active tree 指针。
+    m_collisionRoomId.clear();
+}
+
+void RoomManager::updateCollisionRooms(const QString &currentRoomId)
+{
+    if (m_collisionRoomId == currentRoomId)
+        return;
+    m_collisionRoomId = currentRoomId;
+
+    Room *current = room(currentRoomId);
+    QSet<QString> wanted;
+    if (current == nullptr) {
+        for (Room *room : m_roomOrder)
+            wanted.insert(room->def.id);
+    } else {
+        wanted.insert(current->def.id);
+        const RoomDef &currentDef = current->def;
+        for (Room *room : m_roomOrder) {
+            if (room == current || room->def.cell[2] != currentDef.cell[2])
+                continue;
+            const int dc = qAbs(room->def.cell[0] - currentDef.cell[0]);
+            const int dr = qAbs(room->def.cell[1] - currentDef.cell[1]);
+            if (dc + dr == 1)
+                wanted.insert(room->def.id);
+        }
+        for (const VerticalLinkDef &link : m_def.verticalLinks) {
+            if (link.lower == current->def.id)
+                wanted.insert(link.upper);
+            else if (link.upper == current->def.id)
+                wanted.insert(link.lower);
+        }
+        // 翻窗等非 grid 邻接在过渡期间也需要两侧房间的静态几何。
+        for (const PortalDef &portal : m_def.portals) {
+            if (portal.fromRoom == current->def.id)
+                wanted.insert(portal.toRoom);
+            else if (portal.toRoom == current->def.id)
+                wanted.insert(portal.fromRoom);
+        }
+    }
+
+    m_collisionRoomIds.clear();
+    QList<const BVHTree<Triangle>*> trees;
+    for (Room *room : m_roomOrder) {
+        if (!wanted.contains(room->def.id))
+            continue;
+        m_collisionRoomIds.push_back(room->def.id);
+        trees.push_back(&room->staticBVH);
+    }
+    if (m_stage != nullptr)
+        m_stage->setActiveStaticCollisionTrees(trees);
+    qDebug() << "collision rooms for" << currentRoomId << ":" << m_collisionRoomIds;
 }
 
 Room *RoomManager::loadRoomScene(const RoomDef &def)

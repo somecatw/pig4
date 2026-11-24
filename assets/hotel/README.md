@@ -82,6 +82,15 @@ link; the relation is symmetric at runtime:
 
 No automatic `floor ± 1` expansion is done.
 
+### Static collision set
+
+Each room owns a static BVH built from its static room meshes. Collision and
+static occlusion queries use only the current room plus same-floor rooms one
+grid step away, `verticalLinks` endpoints, and portal endpoints. This keeps
+door thresholds and window transitions covered without querying the whole
+building. Dynamic OBB colliders (doors/windows/elevator doors) stay global and
+are still tested from either side of a boundary.
+
 ## Portals
 
 Portals are only for transitions that cannot be walked normally, such as
