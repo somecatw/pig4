@@ -59,6 +59,11 @@ Current 1F west wing: `room_1wcorridor` is cell `[2, 0, -2]`, and
 front/connecting side; its north wall opening lines up with the existing
 `1W_lobby` door).
 
+Current 5F west wing: `room_5wcorridor` is cell `[2, 0, 2]`,
+`room_billard` is cell `[2, -1, 2]`, and `room_lifesong` is cell `[1, 0, 2]`.
+The lifesong room's east-wall opening lines up with the corridor's
+`5W_lifesong` door; its own `lifesong_manager` marker is an interior door.
+
 ## Portals
 
 Portals are only for transitions that cannot be walked normally, such as

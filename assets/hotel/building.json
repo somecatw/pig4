@@ -58,6 +58,14 @@
       "markers": "room_billard/room_billard.markers.json",
       "cell": [2, -1, 2],
       "yaw": 0.0
+    },
+    {
+      "id": "room_lifesong",
+      "label": "五楼·生命之歌",
+      "scene": "room_lifesong/room_lifesong_engine.obj",
+      "markers": "room_lifesong/room_lifesong.markers.json",
+      "cell": [1, 0, 2],
+      "yaw": 0.0
     }
   ],
   "puzzles": [

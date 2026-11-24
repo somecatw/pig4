@@ -1,0 +1,109 @@
+{
+  "room": "room_lifesong",
+  "markers": [
+    {
+      "name": "PH_SPR_puzzle_lifesong",
+      "type": "SPR",
+      "id": "puzzle_lifesong",
+      "position": [
+        361.2067,
+        18.4641,
+        -13.7639
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "puzzle_lifesong",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_remote",
+      "type": "SPR",
+      "id": "remote",
+      "position": [
+        430.420613,
+        11.252,
+        21.275113
+      ],
+      "basisX": [
+        0.998971,
+        0.043261,
+        -0.013651
+      ],
+      "basisY": [
+        0.006188,
+        0.168166,
+        0.985739
+      ],
+      "basisZ": [
+        0.04494,
+        -0.984809,
+        0.167725
+      ],
+      "size": [
+        6.088115,
+        6.088045
+      ],
+      "thickness": 1.000005,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "remote",
+      "texture": "../../images/remote.png",
+      "billboard": false
+    },
+    {
+      "name": "PH_DOOR_lifesong_manager",
+      "type": "DOOR",
+      "id": "lifesong_manager",
+      "position": [
+        359.0703,
+        15.0,
+        -1.1541
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    }
+  ]
+}
