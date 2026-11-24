@@ -127,6 +127,12 @@ private:
     void playStoryRequest(const QString &request);
     void startStory(const StoryScript &script);
     void closeStory(bool skipped);
+    void startIntroStory();
+    void checkRoomStoryTriggers();
+    bool storyTriggersSuppressed() const;
+    bool introStarted = false;
+    bool introPaperPending = false;
+    bool lobbyCryPlayed = false;
     void combineItem(const QString &otherId);
     bool removeItem(const QString &id);
     void showGameNotice(const QString &text, int durationMs = 2200);

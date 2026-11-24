@@ -24,6 +24,8 @@ struct InteractTarget
     // 通用 3D 交互物（HOT/TRIG 等）的配置；空则走默认提示。
     QString prompt;   // 准星提示，代码会加 "[F] " 前缀
     QString notice;   // 按 F 后显示的文本
+    QString story;    // 可选：按 F 播放的剧情 <plotId>[:<moduleName>]
+    bool storyPlayed = false;
     // 通用拾取：非空时按 F 把这个 item 放进背包。
     QString pickupItem;
     QString pickupName;

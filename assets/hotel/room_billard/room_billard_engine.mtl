@@ -39,3 +39,7 @@ newmtl celling_billard
 Kd 1.0 1.0 1.0
 map_Kd celling_billard_VRayCompleteMap.png
 
+newmtl Couch_Medium004
+Kd 1.0 1.0 1.0
+map_Kd Couch_Medium004_VRayCompleteMap.png
+

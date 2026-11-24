@@ -75,6 +75,8 @@ struct InteractionDef
     QString marker;
     QString prompt;
     QString notice;
+    // 可选：<plotId>[:<moduleName>]，按 F 时播放，可替代 notice。
+    QString story;
 };
 
 // 程序化绘制的钟表：PH_SPR marker + 表盘参数。

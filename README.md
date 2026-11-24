@@ -78,13 +78,22 @@ MSVC 的 `/showIncludes` 前缀会按当前控制台代码页输出 GBK 或 UTF-
 - `assets/story/plots.json` 和 `opening.json` 由
   `python -I tools/extract_flash_story.py` 从 `flash_export/` 生成。
 
+当前主线触发：
+
+- 新游戏在 303 出生，自动播放 `opening` + `_7_Ruby:module_1`；
+  剧情结束/跳过后直接获得纸团。
+- 首次进入大堂播放 `_7_Ruby:module_2`（哭声）。
+- 大堂大门按 F 首次播放 `_7_Ruby:module_6`，之后回退到普通 notice。
+
 开发测试：
 
 - `T` 键播放开场白；
 - `PIG4_STORY=opening` 启动时播放开场白，
   `PIG4_STORY=_0_Dian:module_1` 播放指定 plot/module；
 - `PIG4_STORY_ADVANCE=3` 在第一帧推进 3 行，方便截图；
-- `PIG4_STORY_SKIP=1` 在第一帧点击“跳过”按钮，验证关闭与恢复控制。
+- `PIG4_STORY_SKIP=1` 在第一帧点击“跳过”按钮，验证关闭与恢复控制；
+- `PIG4_SHOW_STORIES=1` 让截图/调试模式也自动触发主线剧情；
+- `PIG4_SKIP_INTRO=1` 跳过 303 开场，`PIG4_SKIP_STORY=1` 跳过房间自动剧情。
 
 ## Overlay framework
 

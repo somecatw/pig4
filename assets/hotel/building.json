@@ -265,7 +265,8 @@
       "room": "room_lobby",
       "marker": "maindoor",
       "prompt": "查看 大门",
-      "notice": "酒店大门被封死了。"
+      "notice": "酒店大门被封死了。",
+      "story": "_7_Ruby:module_6"
     }
   ],
   "clocks": [
@@ -295,13 +296,6 @@
       "item": "key_1",
       "name": "1号钥匙",
       "icon": "key:1"
-    },
-    {
-      "room": "room_lobby",
-      "marker": "item_paper",
-      "item": "paper",
-      "name": "纸团",
-      "icon": "paper_fold.png"
     },
     {
       "room": "room_billard",

@@ -142,6 +142,7 @@ BuildingDef BuildingManifest::load(const QString &path)
         interaction.marker = o.value("marker").toString();
         interaction.prompt = o.value("prompt").toString();
         interaction.notice = o.value("notice").toString();
+        interaction.story = o.value("story").toString();
         if (!interaction.room.isEmpty() && !interaction.marker.isEmpty())
             def.interactions.push_back(interaction);
         else

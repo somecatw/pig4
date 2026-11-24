@@ -226,9 +226,9 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
 
-        // 默认出生点：303。
-        const Transform defaultCam = lookAtTransform({800.0f, -500.0f, -700.0f},
-                                                     {-600.0f, -300.0f, 400.0f});
+        // 默认出生点：303 房间。
+        const Transform defaultCam = lookAtTransform({2532.0f, -500.0f, -700.0f},
+                                                     {1132.0f, -300.0f, 400.0f});
         camera->setTransform(defaultCam);
         camera->updatePosition(defaultCam);
     }
@@ -257,6 +257,10 @@ MainWindow::MainWindow(QWidget *parent)
     jumpFlag = false;
 
     DevHooks::startup(*this);
+
+    // 新游戏开场：303 醒来 + 纸条。延时到事件循环，避免挡住 DevHooks
+    // 的测试场景；正常启动时仍会在第一帧显示。
+    QTimer::singleShot(0, this, [this] { startIntroStory(); });
 }
 
 // 准星交互：hotspot 是一个以 center 为中心、halfSize 为半边的 OBB。
@@ -518,6 +522,7 @@ void MainWindow::showGameNotice(const QString &text, int durationMs)
 
 void MainWindow::updateRoomUi()
 {
+    checkRoomStoryTriggers();
     if (roomLabel == nullptr) return;
     if (currentRoom.isEmpty()) {
         roomLabel->clear();
@@ -646,6 +651,17 @@ void MainWindow::interactHovered()
         setHoveredTarget(-1);
         qDebug() << "picked up:" << target.id << "inventory size:" << inventory.size();
         showGameNotice(QStringLiteral("获得 月亮积木"));
+        return;
+    }
+
+    // 配置了剧情的交互物优先播放剧情；播过一次后回退到 notice。
+    if (!target.story.isEmpty()) {
+        if (!target.storyPlayed) {
+            target.storyPlayed = true;
+            playStoryRequest(target.story);
+        } else if (!target.notice.isEmpty()) {
+            showGameNotice(target.notice);
+        }
         return;
     }
 
@@ -885,6 +901,57 @@ void MainWindow::startStory(const StoryScript &script)
     qDebug() << "story start:" << script.id << script.lines.size() << "lines";
 }
 
+bool MainWindow::storyTriggersSuppressed() const
+{
+    // 测试/截图模式默认不自动弹剧情；PIG4_SHOW_STORIES 可强制打开。
+    if (qEnvironmentVariableIsSet("PIG4_SHOW_STORIES"))
+        return false;
+    return qEnvironmentVariableIsSet("PIG4_SKIP_STORY")
+        || qEnvironmentVariableIsSet("PIG4_ROOM_SHOT")
+        || qEnvironmentVariableIsSet("PIG4_OPEN_PUZZLE")
+        || qEnvironmentVariableIsSet("PIG4_OPEN_ITEM")
+        || qEnvironmentVariableIsSet("PIG4_STORY");
+}
+
+void MainWindow::startIntroStory()
+{
+    if (introStarted || currentRoom != QStringLiteral("room_303")
+        || qEnvironmentVariableIsSet("PIG4_SKIP_INTRO")
+        || storyTriggersSuppressed()) {
+        return;
+    }
+    if (storyCatalog == nullptr || stageOverlay == nullptr
+        || stageOverlay->hasContent()) {
+        return;
+    }
+
+    StoryScript script = storyCatalog->openingScript();
+    const StoryScript roomScript =
+        storyCatalog->script(QStringLiteral("_7_Ruby"), QStringLiteral("module_1"));
+    script.lines += roomScript.lines;
+    if (script.lines.isEmpty())
+        return;
+
+    introStarted = true;
+    introPaperPending = true;
+    script.id = QStringLiteral("303_intro");
+    script.title = QStringLiteral("303 / 出生");
+    startStory(script);
+}
+
+void MainWindow::checkRoomStoryTriggers()
+{
+    if (lobbyCryPlayed || storyTriggersSuppressed()
+        || currentRoom != QStringLiteral("room_lobby")) {
+        return;
+    }
+    if (stageOverlay == nullptr || stageOverlay->hasContent())
+        return;
+
+    lobbyCryPlayed = true;
+    playStoryRequest(QStringLiteral("_7_Ruby:module_2"));
+}
+
 void MainWindow::closeStory(bool skipped)
 {
     if (stageOverlay == nullptr || storyView == nullptr)
@@ -895,9 +962,18 @@ void MainWindow::closeStory(bool skipped)
     hideOverlay(storyView);
     storyView->clearScript();
 
-    if (skipped)
+    if (introPaperPending) {
+        introPaperPending = false;
+        addItem(QStringLiteral("paper"), QStringLiteral("纸团"),
+                ItemIcons::imageIcon(QStringLiteral("paper_fold.png")));
+        showGameNotice(QStringLiteral("获得 纸团"));
+    } else if (skipped) {
         showGameNotice(QStringLiteral("已跳过剧情。"), 1500);
+    }
     qDebug() << "story closed, skipped:" << skipped;
+
+    // 如果进入大堂时正好有 overlay，关掉后再补一次触发检查。
+    checkRoomStoryTriggers();
 }
 
 bool MainWindow::removeItem(const QString &id)

@@ -182,9 +182,6 @@ static MeshActor *createSpriteActor(Room *room, const RoomMarker &m,
         // 1号钥匙先复用钥匙图标工厂，保证桌面 SPR 和背包图标一致。
         img = ItemIcons::keyIcon(ItemIcons::silver(), 1);
     }
-    if (img.isNull() && m.id == QStringLiteral("item_paper")) {
-        img = ItemIcons::imageIcon(QStringLiteral("paper_fold.png"));
-    }
     if (img.isNull()) {
         // Generic generated pickup sprite: lets a marker like PH_SPR_key3 use
         // the same icon factory as the inventory without exporting a PNG.
@@ -807,9 +804,11 @@ bool RoomManager::loadBuilding(const QString &path)
         }
         target->prompt = def.prompt;
         target->notice = def.notice;
+        target->story = def.story;
         qDebug() << "interaction:" << def.room << def.marker
                  << "prompt" << def.prompt
-                 << "notice" << def.notice;
+                 << "notice" << def.notice
+                 << "story" << def.story;
     }
 
     // 通用拾取配置：把 marker 绑定到 inventory item。
