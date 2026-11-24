@@ -50,6 +50,14 @@
       "markers": "room_5wcorridor/room_5wcorridor.markers.json",
       "cell": [2, 0, 2],
       "yaw": 0.0
+    },
+    {
+      "id": "room_billard",
+      "label": "五楼·台球室",
+      "scene": "room_billard/room_billard_engine.obj",
+      "markers": "room_billard/room_billard.markers.json",
+      "cell": [2, -1, 2],
+      "yaw": 0.0
     }
   ],
   "puzzles": [
@@ -294,6 +302,13 @@
       "item": "paper",
       "name": "纸团",
       "icon": "paper_fold.png"
+    },
+    {
+      "room": "room_billard",
+      "marker": "key3",
+      "item": "key_3",
+      "name": "3号钥匙",
+      "icon": "key:3"
     }
   ]
 }

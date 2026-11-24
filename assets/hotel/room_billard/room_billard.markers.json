@@ -1,0 +1,144 @@
+{
+  "room": "room_billard",
+  "markers": [
+    {
+      "name": "PH_SPR_dartboard",
+      "type": "SPR",
+      "id": "dartboard",
+      "position": [
+        483.8401,
+        18.6373,
+        -132.8327
+      ],
+      "basisX": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "dartboard",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_SPR_cyan_puzzle",
+      "type": "SPR",
+      "id": "cyan_puzzle",
+      "position": [
+        548.3812,
+        18.6373,
+        -179.9166
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        5.0,
+        5.0
+      ],
+      "thickness": 1.0,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "cyan_puzzle",
+      "texture": "",
+      "billboard": false
+    },
+    {
+      "name": "PH_DOOR_billard_5E",
+      "type": "DOOR",
+      "id": "billard_5E",
+      "position": [
+        532.1875,
+        15.0,
+        -182.0269
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "basisZ": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "size": [
+        14.6,
+        30.0
+      ],
+      "thickness": 4.0,
+      "side": "",
+      "openAngle": 1.57,
+      "style": "default",
+      "asset": "../shared/props/door_9_engine.obj"
+    },
+    {
+      "name": "PH_SPR_key3",
+      "type": "SPR",
+      "id": "key3",
+      "position": [
+        550.5953,
+        9.239675,
+        -90.442925
+      ],
+      "basisX": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "basisY": [
+        0.0,
+        0.42261,
+        0.906312
+      ],
+      "basisZ": [
+        0.0,
+        -0.906312,
+        0.42261
+      ],
+      "size": [
+        5.0,
+        5.000017
+      ],
+      "thickness": 1.000118,
+      "side": "",
+      "openAngle": 0.0,
+      "style": "key3",
+      "texture": "",
+      "billboard": false
+    }
+  ]
+}

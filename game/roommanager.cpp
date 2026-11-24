@@ -77,6 +77,17 @@ static const PuzzleDef *findPuzzle(const BuildingDef &building,
     return nullptr;
 }
 
+static const PickupDef *findPickup(const BuildingDef &building,
+                                   const QString &roomId,
+                                   const QString &marker)
+{
+    for (const PickupDef &pickup : building.pickups) {
+        if (pickup.room == roomId && pickup.marker == marker)
+            return &pickup;
+    }
+    return nullptr;
+}
+
 // 沿 dir 向房间几何打一条短射线，返回最近交点距离（source 空间）。
 // 用来判断 sprite 贴墙的一侧：房间 AABB 中心可能落在隔墙另一侧（L 形
 // 走廊等），只看中心会把 sprite 翻进墙里。
@@ -173,6 +184,21 @@ static MeshActor *createSpriteActor(Room *room, const RoomMarker &m,
     }
     if (img.isNull() && m.id == QStringLiteral("item_paper")) {
         img = ItemIcons::imageIcon(QStringLiteral("paper_fold.png"));
+    }
+    if (img.isNull()) {
+        // Generic generated pickup sprite: lets a marker like PH_SPR_key3 use
+        // the same icon factory as the inventory without exporting a PNG.
+        if (const PickupDef *pickup = findPickup(building, room->def.id, m.id)) {
+            if (pickup->icon.startsWith(QStringLiteral("key:"))) {
+                bool ok = false;
+                const int number = pickup->icon.mid(4).toInt(&ok);
+                img = ItemIcons::keyIcon(ItemIcons::silver(), ok ? number : 0);
+            } else if (!pickup->icon.isEmpty()) {
+                img = ItemIcons::imageIcon(pickup->icon);
+            } else if (!pickup->item.isEmpty()) {
+                img = ItemIcons::imageIcon(pickup->item + QStringLiteral(".png"));
+            }
+        }
     }
     if (img.isNull()) {
         // 贴图还没导出的 SPR 先隐藏：不生成网格、不创建交互目标。
