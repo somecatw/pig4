@@ -3,6 +3,7 @@
 
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include "buildingmanifest.h"
 #include "doorsystem.h"
@@ -42,6 +43,11 @@ public:
     Vec3 roomSourceToWorld(const Room *room, const Vec3 &sourcePos) const;
     Room *roomAt(const Vec3 &worldPos) const;
 
+    // L2：只提交当前房间、同层同 col/row 的房间，以及 verticalLinks 的
+    // 另一侧。静态 BVH 和资源仍然全部常驻。
+    void updateRenderRooms(const QString &currentRoomId);
+    QStringList renderRoomIds() const { return m_renderRoomIds; }
+
 private:
     Room *loadRoomScene(const RoomDef &def);
     void createRoomObjects(Room *room);
@@ -54,6 +60,8 @@ private:
     GameObject *m_buildingRoot = nullptr;
     QHash<QString, Room*> m_rooms;
     QList<Room*> m_roomOrder;
+    QString m_renderRoomId;
+    QStringList m_renderRoomIds;
     DoorSystem m_doorSystem;
     GameEvents m_events;
     QList<InteractTarget> m_interactables;

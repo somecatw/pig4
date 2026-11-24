@@ -64,6 +64,24 @@ Current 5F west wing: `room_5wcorridor` is cell `[2, 0, 2]`,
 The lifesong room's east-wall opening lines up with the corridor's
 `5W_lifesong` door; its own `lifesong_manager` marker is an interior door.
 
+### Render room set
+
+Rendering is culled by room without baking visibility. The engine submits the
+current room, every room on the same floor with the same `col` or `row`, and
+any room connected by a vertical link. Other rooms remain loaded and in the
+collision BVH, but are not submitted.
+
+Room-level stair/ceiling openings that do not follow the grid use an explicit
+link; the relation is symmetric at runtime:
+
+```json
+"verticalLinks": [
+  { "lower": "room_1wcorridor", "upper": "room_2wcorridor" }
+]
+```
+
+No automatic `floor ± 1` expansion is done.
+
 ## Portals
 
 Portals are only for transitions that cannot be walked normally, such as

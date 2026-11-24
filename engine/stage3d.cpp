@@ -176,6 +176,8 @@ void Stage3D::updateObjects(GameObject *rt, const Transform &curr, bool ignoreFl
 void Stage3D::submitObjects(GameObject *rt) const{
     if(rt == nullptr) return;
     for(GameObject *child: rt->children()){
+        if (!child->isRenderVisible())
+            continue;
         child->submitForRender();
         submitObjects(child);
     }

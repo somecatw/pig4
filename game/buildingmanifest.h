@@ -45,6 +45,14 @@ struct PortalDef
     }
 };
 
+// 楼梯/楼板开口等非 grid 直线关系的上下房间连接。
+// 渲染集合在任一端都会包含另一端；没有配置就完全不做垂直扩展。
+struct VerticalLinkDef
+{
+    QString lower;
+    QString upper;
+};
+
 // 门/窗锁配置放在 building.json，而不是每次重新导出的 markers JSON。
 struct LockDef
 {
@@ -179,6 +187,7 @@ struct BuildingDef
     float floorOffsetY = -2.3328f;
     QString anchorRoom;
     QList<RoomDef> rooms;
+    QList<VerticalLinkDef> verticalLinks;
     QList<PortalDef> portals;
     QList<LockDef> locks;
     QList<DoorStateDef> doorStates;

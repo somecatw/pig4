@@ -74,6 +74,9 @@ public:
     void setTransform(const Transform &t);
     const Transform &getTransform()const;
     Transform getGlobalTransform() const;
+    // 渲染可见性只跳过提交；对象仍然留在场景树里，逻辑/碰撞不受影响。
+    void setRenderVisible(bool visible) { m_renderVisible = visible; }
+    bool isRenderVisible() const { return m_renderVisible; }
     virtual void updatePosition(const Transform &t);
     virtual void submitForRender();
     // 每帧动画入口；默认不做事，Door 等动态对象覆盖它
@@ -128,6 +131,7 @@ public:
 
 protected:
     bool modified;
+    bool m_renderVisible = true;
     Transform transform;
 
     template<class ActorPtr, class SelfPtr, class Visitor>

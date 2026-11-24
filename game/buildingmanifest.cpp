@@ -52,6 +52,19 @@ BuildingDef BuildingManifest::load(const QString &path)
         def.rooms.push_back(room);
     }
 
+    const QJsonArray verticalLinks = root.value("verticalLinks").toArray();
+    for (const QJsonValue &v : verticalLinks) {
+        if (!v.isObject()) continue;
+        const QJsonObject o = v.toObject();
+        VerticalLinkDef link;
+        link.lower = o.value("lower").toString();
+        link.upper = o.value("upper").toString();
+        if (!link.lower.isEmpty() && !link.upper.isEmpty())
+            def.verticalLinks.push_back(link);
+        else
+            qWarning() << "building manifest: verticalLink missing lower/upper, skipped";
+    }
+
     const QJsonArray portals = root.value("portals").toArray();
     for (const QJsonValue &v : portals) {
         if (!v.isObject()) continue;

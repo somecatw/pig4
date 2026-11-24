@@ -559,6 +559,56 @@ Room *RoomManager::roomAt(const Vec3 &worldPos) const
     return nullptr;
 }
 
+void RoomManager::updateRenderRooms(const QString &currentRoomId)
+{
+    if (m_renderRoomId == currentRoomId)
+        return;
+    m_renderRoomId = currentRoomId;
+
+    Room *current = room(currentRoomId);
+    if (current == nullptr) {
+        // 不在任何房间时不裁掉房间，避免相机越界/调试时黑屏。
+        m_renderRoomIds.clear();
+        for (Room *room : m_roomOrder) {
+            room->setRenderVisible(true);
+            m_renderRoomIds.push_back(room->def.id);
+        }
+        qWarning() << "render room fallback: current room not found:"
+                   << currentRoomId;
+        return;
+    }
+
+    QSet<QString> visible;
+    visible.insert(current->def.id);
+    const RoomDef &currentDef = current->def;
+    for (Room *room : m_roomOrder) {
+        if (room == current)
+            continue;
+        if (room->def.cell[2] != currentDef.cell[2])
+            continue;
+        if (room->def.cell[0] == currentDef.cell[0]
+            || room->def.cell[1] == currentDef.cell[1]) {
+            visible.insert(room->def.id);
+        }
+    }
+
+    for (const VerticalLinkDef &link : m_def.verticalLinks) {
+        if (link.lower == current->def.id)
+            visible.insert(link.upper);
+        else if (link.upper == current->def.id)
+            visible.insert(link.lower);
+    }
+
+    m_renderRoomIds.clear();
+    for (Room *room : m_roomOrder) {
+        const bool enabled = visible.contains(room->def.id);
+        room->setRenderVisible(enabled);
+        if (enabled)
+            m_renderRoomIds.push_back(room->def.id);
+    }
+    qDebug() << "render rooms for" << currentRoomId << ":" << m_renderRoomIds;
+}
+
 Room *RoomManager::loadRoomScene(const RoomDef &def)
 {
     const QString scenePath = QDir(m_dir).absoluteFilePath(def.scene);

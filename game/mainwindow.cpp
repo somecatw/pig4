@@ -537,6 +537,8 @@ void MainWindow::showGameNotice(const QString &text, int durationMs)
 
 void MainWindow::updateRoomUi()
 {
+    if (roomManager != nullptr)
+        roomManager->updateRenderRooms(currentRoom);
     checkRoomStoryTriggers();
     if (roomLabel == nullptr) return;
     if (currentRoom.isEmpty()) {
@@ -1919,6 +1921,17 @@ void MainWindow::updateDebugOverlay()
     if (roomLabel != nullptr && !roomLabel->text().isEmpty())
         roomText += QStringLiteral(" · ") + roomLabel->text();
 
+    QString cellText = QStringLiteral("—");
+    if (roomManager != nullptr && !currentRoom.isEmpty()) {
+        if (Room *room = roomManager->room(currentRoom)) {
+            cellText = QStringLiteral("[%1, %2, %3]")
+                .arg(room->def.cell[0]).arg(room->def.cell[1])
+                .arg(room->def.cell[2]);
+        }
+    }
+    const QStringList renderRooms = roomManager != nullptr
+        ? roomManager->renderRoomIds() : QStringList();
+
     QString selected = QStringLiteral("—");
     if (inventoryIndex >= 0 && inventoryIndex < inventory.size()) {
         const InventoryItem &item = inventory[inventoryIndex];
@@ -1941,10 +1954,18 @@ void MainWindow::updateDebugOverlay()
 
     QStringList right;
     right << QStringLiteral("Room: %1").arg(roomText);
-    right << QStringLiteral("Building: %1 rooms · %2 portals · %3 locks · %4 conn")
+    right << QStringLiteral("Cell: %1").arg(cellText);
+    right << QStringLiteral("Render: %1 / %2 rooms")
+        .arg(renderRooms.size())
+        .arg(roomManager != nullptr ? roomManager->rooms().size() : 0);
+    right << QStringLiteral("  %1")
+        .arg(renderRooms.isEmpty() ? QStringLiteral("—")
+                                   : renderRooms.join(QStringLiteral(", ")));
+    right << QStringLiteral("Building: %1 rooms · %2 portals · %3 locks · %4 conn · %5 vert")
         .arg(roomManager != nullptr ? roomManager->rooms().size() : 0)
         .arg(building.portals.size()).arg(building.locks.size())
-        .arg(building.connections.size());
+        .arg(building.connections.size())
+        .arg(building.verticalLinks.size());
     right << QStringLiteral("Doors: %1 · open %2 · locked %3")
         .arg(doorTotal).arg(doorOpen).arg(doorLocked);
     right << QStringLiteral("Inventory: %1 items · page %2/%3")
