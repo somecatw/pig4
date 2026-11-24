@@ -3,12 +3,15 @@
 
 Two sources:
   * juqing/movie/*.as   -> this.t[frame] = "..." movie text arrays
+                          (movie_text.json; KaiChangBai is the runtime opening)
   * juqing/_*.as        -> note.push(...) plot timelines -> assets/story/plots.json
 
 plots.json parses only "show one line" steps: [speakerId, text] becomes a
 `line`, plain strings become `narration`. Doors, mechanisms, portraits, choices
-and other commands stay under `raw` so the runtime can be configured explicitly.
-A human-readable dump is also written to plot_text.txt.
+and other commands stay under `raw` as migration reference; the runtime ignores
+raw and executes hand-authored commands from assets/story/plots_custom.json.
+This tool never writes plots_custom.json. A human-readable dump is also written
+to plot_text.txt.
 Run from the pig4 repository root:
 
   python -I tools/extract_flash_story.py
@@ -21,6 +24,16 @@ import ast
 import json
 import re
 from pathlib import Path
+
+# `this.t[n]` keys are Flash frame labels, not necessarily playback order.
+# The decompiled AS3 only contains the label-to-text map; the real order is on
+# the FLA timeline. This is the verified KaiChangBai timeline order.
+MOVIE_LABEL_ORDER = {
+    "KaiChangBai": [
+        10, 1, 2, 39, 3, 22, 23, 24, 29, 30, 31, 5, 6, 26, 27, 28, 7,
+        8, 9, 11, 35, 36, 12, 13, 14, 38, 37, 15, 32, 33, 34, 16, 17, 21,
+    ],
+}
 
 SPEAKER_FALLBACK = {
     0: "???",
@@ -80,7 +93,16 @@ def extract_movies(flash: Path, out: Path, speakers: dict[int, str]) -> None:
             entries.append((frame, value))
         if not entries:
             continue
-        entries.sort(key=lambda item: item[0])
+        by_frame = dict(entries)
+        override = MOVIE_LABEL_ORDER.get(path.stem)
+        if override:
+            ordered = [(frame, by_frame[frame]) for frame in override if frame in by_frame]
+            seen = {frame for frame, _ in ordered}
+            ordered.extend(sorted((frame, value) for frame, value in entries
+                                  if frame not in seen))
+            entries = ordered
+        else:
+            entries.sort(key=lambda item: item[0])
         lines = []
         for frame, value in entries:
             if not value.strip():

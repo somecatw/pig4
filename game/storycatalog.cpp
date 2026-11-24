@@ -10,55 +10,99 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 
-static QList<StoryLine> linesFromOpening(const QJsonArray &array)
+static StoryStep lineStep(const QString &speaker, const QString &text)
 {
-    QList<StoryLine> lines;
+    StoryStep step;
+    step.kind = StoryStep::Line;
+    step.line.speaker = speaker;
+    step.line.text = text;
+    return step;
+}
+
+static QList<StoryStep> stepsFromOpening(const QJsonArray &array)
+{
+    QList<StoryStep> steps;
     for (const QJsonValue &value : array) {
         if (!value.isObject())
             continue;
         const QJsonObject object = value.toObject();
-        StoryLine line;
-        const QJsonValue speaker = object.value(QStringLiteral("speaker"));
-        if (speaker.isString())
-            line.speaker = speaker.toString();
-        line.text = object.value(QStringLiteral("text")).toString();
-        if (!line.text.isEmpty())
-            lines.append(line);
+        const QString text = object.value(QStringLiteral("text")).toString();
+        if (text.isEmpty())
+            continue;
+        steps.append(lineStep(
+            object.value(QStringLiteral("speaker")).toString(), text));
     }
-    return lines;
+    return steps;
 }
 
-static QList<StoryLine> linesFromSteps(const QJsonArray &steps,
+static QList<StoryStep> stepsFromSteps(const QJsonArray &steps,
                                        const QHash<int, QString> &speakers)
 {
-    QList<StoryLine> lines;
+    QList<StoryStep> result;
     for (const QJsonValue &value : steps) {
         if (!value.isObject())
             continue;
         const QJsonObject step = value.toObject();
         const QString type = step.value(QStringLiteral("type")).toString();
 
-        StoryLine line;
-        if (type == QStringLiteral("line")) {
-            const QJsonValue speaker = step.value(QStringLiteral("speaker"));
-            if (speaker.isString()) {
-                line.speaker = speaker.toString();
-            } else {
-                const int speakerId = step.value(QStringLiteral("speakerId")).toInt(-1);
-                line.speaker = speakers.value(speakerId);
+        if (type == QStringLiteral("line")
+            || type == QStringLiteral("narration")) {
+            QString speaker;
+            if (type == QStringLiteral("line")) {
+                const QJsonValue speakerValue =
+                    step.value(QStringLiteral("speaker"));
+                if (speakerValue.isString()) {
+                    speaker = speakerValue.toString();
+                } else {
+                    const int speakerId =
+                        step.value(QStringLiteral("speakerId")).toInt(-1);
+                    speaker = speakers.value(speakerId);
+                }
             }
-            line.text = step.value(QStringLiteral("text")).toString();
-        } else if (type == QStringLiteral("narration")) {
-            line.text = step.value(QStringLiteral("text")).toString();
-        } else {
-            // raw：原版的门/机关/选项/立绘等，第一版不执行。
+            const QString text = step.value(QStringLiteral("text")).toString();
+            if (!text.isEmpty())
+                result.append(lineStep(speaker, text));
             continue;
         }
 
-        if (!line.text.isEmpty())
-            lines.append(line);
+        // 只执行我们手写脚本里的 command；plots.json 里的 raw 是 export
+        // 原始指令，保留作迁移参考，不直接交给运行时。
+        if (type == QStringLiteral("command")) {
+            StoryStep command;
+            command.kind = StoryStep::Command;
+            command.command.name =
+                step.value(QStringLiteral("name")).toString();
+            command.command.args =
+                step.value(QStringLiteral("args")).toArray();
+            if (!command.command.name.isEmpty())
+                result.append(command);
+        }
     }
-    return lines;
+    return result;
+}
+
+static bool stepsHaveLines(const QList<StoryStep> &steps)
+{
+    for (const StoryStep &step : steps) {
+        if (step.kind == StoryStep::Line && !step.line.text.isEmpty())
+            return true;
+    }
+    return false;
+}
+
+bool StoryScript::hasLines() const
+{
+    return stepsHaveLines(steps);
+}
+
+int StoryScript::lineCount() const
+{
+    int count = 0;
+    for (const StoryStep &step : steps) {
+        if (step.kind == StoryStep::Line && !step.line.text.isEmpty())
+            ++count;
+    }
+    return count;
 }
 
 bool StoryCatalog::load(const QString &directory)
@@ -69,40 +113,55 @@ bool StoryCatalog::load(const QString &directory)
 
     const QDir dir(directory);
 
-    QFile openingFile(dir.filePath(QStringLiteral("opening.json")));
-    if (openingFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    // Opening is authored in movie_text.json together with the other movie
+    // timelines. opening.json is only a compatibility fallback.
+    QFile movieFile(dir.filePath(QStringLiteral("movie_text.json")));
+    if (movieFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QJsonParseError error{};
         const QJsonDocument document =
-            QJsonDocument::fromJson(openingFile.readAll(), &error);
+            QJsonDocument::fromJson(movieFile.readAll(), &error);
         if (error.error == QJsonParseError::NoError && document.isObject()) {
-            m_opening = linesFromOpening(
-                document.object().value(QStringLiteral("lines")).toArray());
+            m_opening = stepsFromOpening(
+                document.object().value(QStringLiteral("KaiChangBai")).toArray());
         } else {
-            qWarning() << "opening.json parse failed:" << error.errorString();
+            qWarning() << "movie_text.json parse failed:" << error.errorString();
         }
-    } else {
-        qWarning() << "opening.json not found in" << directory;
     }
 
+    if (m_opening.isEmpty()) {
+        QFile openingFile(dir.filePath(QStringLiteral("opening.json")));
+        if (openingFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QJsonParseError error{};
+            const QJsonDocument document =
+                QJsonDocument::fromJson(openingFile.readAll(), &error);
+            if (error.error == QJsonParseError::NoError && document.isObject()) {
+                m_opening = stepsFromOpening(
+                    document.object().value(QStringLiteral("lines")).toArray());
+            } else {
+                qWarning() << "opening.json parse failed:" << error.errorString();
+            }
+        } else {
+            qWarning() << "opening.json not found in" << directory;
+        }
+    }
+
+    QJsonObject root;
     QFile plotsFile(dir.filePath(QStringLiteral("plots.json")));
-    if (!plotsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (plotsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QJsonParseError error{};
+        const QJsonDocument document =
+            QJsonDocument::fromJson(plotsFile.readAll(), &error);
+        if (error.error == QJsonParseError::NoError && document.isObject())
+            root = document.object();
+        else
+            qWarning() << "plots.json parse failed:" << error.errorString();
+    } else {
         qWarning() << "plots.json not found in" << directory;
-        m_loaded = !m_opening.isEmpty();
-        return m_loaded;
     }
-
-    QJsonParseError error{};
-    const QJsonDocument document = QJsonDocument::fromJson(plotsFile.readAll(), &error);
-    if (error.error != QJsonParseError::NoError || !document.isObject()) {
-        qWarning() << "plots.json parse failed:" << error.errorString();
-        m_loaded = !m_opening.isEmpty();
-        return m_loaded;
-    }
-
-    const QJsonObject root = document.object();
 
     QHash<int, QString> speakers;
-    const QJsonObject speakerObject = root.value(QStringLiteral("speakers")).toObject();
+    const QJsonObject speakerObject =
+        root.value(QStringLiteral("speakers")).toObject();
     for (auto it = speakerObject.begin(); it != speakerObject.end(); ++it) {
         bool ok = false;
         const int id = it.key().toInt(&ok);
@@ -110,37 +169,86 @@ bool StoryCatalog::load(const QString &directory)
             speakers.insert(id, it.value().toString());
     }
 
-    for (const QJsonValue &plotValue : root.value(QStringLiteral("plots")).toArray()) {
-        if (!plotValue.isObject())
-            continue;
-        const QJsonObject plotObject = plotValue.toObject();
-
-        PlotRecord plotRecord;
-        plotRecord.id = plotObject.value(QStringLiteral("id")).toString();
-        plotRecord.plotIndex = plotObject.value(QStringLiteral("plotIndex")).toInt(-1);
-        if (plotRecord.id.isEmpty())
-            continue;
-
-        for (const QJsonValue &moduleValue :
-             plotObject.value(QStringLiteral("modules")).toArray()) {
-            if (!moduleValue.isObject())
+    auto applyPlots = [this, &speakers](const QJsonArray &plotArray,
+                                        bool overrideModules) {
+        for (const QJsonValue &plotValue : plotArray) {
+            if (!plotValue.isObject())
                 continue;
-            const QJsonObject moduleObject = moduleValue.toObject();
-            ModuleRecord module;
-            module.name = moduleObject.value(QStringLiteral("name")).toString();
-            if (module.name.isEmpty())
+            const QJsonObject plotObject = plotValue.toObject();
+            const QString plotId =
+                plotObject.value(QStringLiteral("id")).toString();
+            if (plotId.isEmpty())
                 continue;
-            module.lines = linesFromSteps(
-                moduleObject.value(QStringLiteral("steps")).toArray(), speakers);
-            plotRecord.modules.append(module);
+
+            PlotRecord *plotRecord = nullptr;
+            for (PlotRecord &candidate : m_plots) {
+                if (candidate.id == plotId) {
+                    plotRecord = &candidate;
+                    break;
+                }
+            }
+            if (plotRecord == nullptr) {
+                PlotRecord created;
+                created.id = plotId;
+                created.plotIndex =
+                    plotObject.value(QStringLiteral("plotIndex")).toInt(-1);
+                m_plots.append(created);
+                plotRecord = &m_plots.last();
+            }
+
+            for (const QJsonValue &moduleValue :
+                 plotObject.value(QStringLiteral("modules")).toArray()) {
+                if (!moduleValue.isObject())
+                    continue;
+                const QJsonObject moduleObject = moduleValue.toObject();
+                ModuleRecord module;
+                module.name =
+                    moduleObject.value(QStringLiteral("name")).toString();
+                if (module.name.isEmpty())
+                    continue;
+                module.steps = stepsFromSteps(
+                    moduleObject.value(QStringLiteral("steps")).toArray(),
+                    speakers);
+
+                if (overrideModules) {
+                    ModuleRecord *existing = nullptr;
+                    for (ModuleRecord &candidate : plotRecord->modules) {
+                        if (candidate.name == module.name) {
+                            existing = &candidate;
+                            break;
+                        }
+                    }
+                    if (existing != nullptr) {
+                        existing->steps = module.steps;
+                        continue;
+                    }
+                }
+                plotRecord->modules.append(module);
+            }
         }
+    };
 
-        m_plots.append(plotRecord);
+    applyPlots(root.value(QStringLiteral("plots")).toArray(), false);
+
+    // 手写脚本覆盖同名 plot/module；extract_flash_story.py 不会写这个文件。
+    QFile customFile(dir.filePath(QStringLiteral("plots_custom.json")));
+    if (customFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QJsonParseError error{};
+        const QJsonDocument document =
+            QJsonDocument::fromJson(customFile.readAll(), &error);
+        if (error.error == QJsonParseError::NoError && document.isObject()) {
+            const QJsonObject customRoot = document.object();
+            applyPlots(customRoot.value(QStringLiteral("plots")).toArray(), true);
+            qInfo() << "story custom scripts:" << customFile.fileName();
+        } else {
+            qWarning() << "plots_custom.json parse failed:"
+                       << error.errorString();
+        }
     }
 
     m_loaded = !m_opening.isEmpty() || !m_plots.isEmpty();
     qInfo() << "story catalog:" << m_plots.size() << "plots,"
-            << m_opening.size() << "opening lines";
+            << m_opening.size() << "opening steps";
     return m_loaded;
 }
 
@@ -178,8 +286,9 @@ StoryScript StoryCatalog::openingScript() const
 {
     StoryScript script;
     script.id = QStringLiteral("opening");
+    script.key = QStringLiteral("opening");
     script.title = QStringLiteral("开场白");
-    script.lines = m_opening;
+    script.steps = m_opening;
     return script;
 }
 
@@ -206,8 +315,9 @@ StoryScript StoryCatalog::script(const QString &plotId,
 
     StoryScript script;
     script.id = plotId;
+    script.key = plotId + QLatin1Char(':') + found->name;
     script.title = plotId + QStringLiteral(" / ") + found->name;
-    script.lines = found->lines;
+    script.steps = found->steps;
     return script;
 }
 
@@ -217,12 +327,13 @@ StoryScript StoryCatalog::firstScript() const
         return openingScript();
     for (const PlotRecord &record : m_plots) {
         for (const ModuleRecord &module : record.modules) {
-            if (module.lines.isEmpty())
+            if (!stepsHaveLines(module.steps))
                 continue;
             StoryScript script;
             script.id = record.id;
+            script.key = record.id + QLatin1Char(':') + module.name;
             script.title = record.id + QStringLiteral(" / ") + module.name;
-            script.lines = module.lines;
+            script.steps = module.steps;
             return script;
         }
     }

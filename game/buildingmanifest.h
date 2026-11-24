@@ -58,6 +58,18 @@ struct LockDef
     QString directRoom;
 };
 
+// 门的剧情/交互状态。state 2 之后的交互优先使用这里配置的 prompt/notice，
+// 而不是普通钥匙锁逻辑；action 支持 none/unlock/lock/open/close/toggle。
+struct DoorStateDef
+{
+    QString room;
+    QString marker;
+    int state = 0;
+    QString prompt;
+    QString notice;
+    QString action = QStringLiteral("none");
+};
+
 // 事件到门动作的连接表。加载时由 DoorSystem 注册到 GameEvents。
 struct ConnectionDef
 {
@@ -77,6 +89,15 @@ struct InteractionDef
     QString notice;
     // 可选：<plotId>[:<moduleName>]，按 F 时播放，可替代 notice。
     QString story;
+};
+
+// 事件到剧情的连接表。例如 pickup.key_3 -> _5_MeetShadow:module_1。
+// once 为 true 时，同一事件只触发一次剧情。
+struct StoryTriggerDef
+{
+    QString event;
+    QString story;
+    bool once = true;
 };
 
 // 程序化绘制的钟表：PH_SPR marker + 表盘参数。
@@ -160,7 +181,9 @@ struct BuildingDef
     QList<RoomDef> rooms;
     QList<PortalDef> portals;
     QList<LockDef> locks;
+    QList<DoorStateDef> doorStates;
     QList<ConnectionDef> connections;
+    QList<StoryTriggerDef> storyTriggers;
     QList<InteractionDef> interactions;
     QList<ClockDef> clocks;
     QList<TextSpriteDef> textSprites;

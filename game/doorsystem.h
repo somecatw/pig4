@@ -27,7 +27,9 @@ public:
 
     void addDoor(Door *door);
     void applyLock(const LockDef &lock);
+    void bindStates(const QList<DoorStateDef> &states);
     void bindConnections(const QList<ConnectionDef> &connections, GameEvents &events);
+    void setInteractionState(Door *door, int state);
 
     Door *findDoor(const QString &roomId, const QString &markerId) const;
     const QList<Door*> &doors() const { return m_doors; }
@@ -46,10 +48,14 @@ public:
 
 private:
     static void (Door::*actionFor(const QString &name))();
+    static Action actionTypeFor(const QString &name);
+    static QString stateKey(const QString &room, const QString &marker);
+    const DoorStateDef *stateRule(const Door *door, int state) const;
 
     Stage3D *m_stage = nullptr;
     QList<Door*> m_doors;
     QHash<Door*, int> m_colliderIds;
+    QHash<QString, QHash<int, DoorStateDef>> m_stateRules;
 };
 
 #endif // DOORSYSTEM_H

@@ -1,6 +1,7 @@
 #ifndef STORYCATALOG_H
 #define STORYCATALOG_H
 
+#include <QJsonArray>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -12,17 +13,39 @@ struct StoryLine
     QString text;
 };
 
-// 一段可播放的剧情。第一版只取原文里的 line / narration，
-// raw 命令（门、机关、选项等）暂时跳过，等我们按自己的配置重写。
+// 我们自己的剧情指令。args 是手写脚本里的参数数组，不含命令名。
+// 未注册的命令由运行时直接 pass，剧情继续往下走。
+struct StoryCommand
+{
+    QString name;
+    QJsonArray args;
+};
+
+// 一段剧情按原始顺序保存文本和命令。命令在播放到它时执行，快进时也会执行。
+struct StoryStep
+{
+    enum Kind { Line, Command };
+    Kind kind = Line;
+    StoryLine line;
+    StoryCommand command;
+};
+
+// 一段可播放的剧情。key 是 <plotId>:<module>，用于剧情生命周期事件。
 struct StoryScript
 {
     QString id;
+    QString key;
     QString title;
-    QList<StoryLine> lines;
+    QList<StoryStep> steps;
+
+    bool hasLines() const;
+    int lineCount() const;
 };
 
-// 读取 assets/story/opening.json 和 plots.json。
-// 只保留“显示一条剧情文本”的步骤，其余 raw 步骤不进入 StoryLine。
+// 读取 assets/story/movie_text.json 的 KaiChangBai 作为开场白，
+// 缺失时回退到 opening.json；plots.json 提供从 export 提取的文本。
+// plots_custom.json 是手写脚本，用来覆盖同名 plot/module，并携带我们自己的
+// command 步骤；原始的 raw 步骤只留在 plots.json 里作为迁移参考，不执行。
 class StoryCatalog
 {
 public:
@@ -39,7 +62,7 @@ public:
 private:
     struct ModuleRecord {
         QString name;
-        QList<StoryLine> lines;
+        QList<StoryStep> steps;
     };
     struct PlotRecord {
         QString id;
@@ -47,7 +70,7 @@ private:
         QList<ModuleRecord> modules;
     };
 
-    QList<StoryLine> m_opening;
+    QList<StoryStep> m_opening;
     QList<PlotRecord> m_plots;
     bool m_loaded = false;
 

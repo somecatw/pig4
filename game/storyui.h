@@ -4,11 +4,11 @@
 #include "overlayui.h"
 #include "storycatalog.h"
 
-class QLabel;
+class DialoguePanel;
 class QPushButton;
 
 // 第一版剧情界面：不运镜，只把 3D 场景留在原地，底部显示说话人和文本。
-// 点击/空格/F/回车推进；右上角“跳过”直接结束整段剧情。
+// 点击/空格/F/回车推进；右上角“快进”会执行剩余的剧情命令后结束。
 class StoryView : public OverlayContent
 {
     Q_OBJECT
@@ -19,16 +19,15 @@ public:
     void clearScript();
 
     bool isPlaying() const { return m_index >= 0 && !m_finished; }
-    int lineIndex() const { return m_index; }
-    int lineCount() const { return int(m_lines.size()); }
 
 public slots:
     void advance();
-    void skip();
+    void fastForward();
 
 signals:
     void storyFinished();
-    void skipRequested();
+    // 命令在正常推进或快进经过该步骤时触发；未注册的命令由接收方 pass。
+    void commandRequested(const StoryCommand &command, const QString &storyKey);
 
 protected:
     bool handleContentKey(QKeyEvent *evt) override;
@@ -36,15 +35,16 @@ protected:
     void mousePressEvent(QMouseEvent *evt) override;
 
 private:
-    QLabel *m_speaker = nullptr;
-    QLabel *m_text = nullptr;
-    QLabel *m_hint = nullptr;
-    QPushButton *m_skipButton = nullptr;
+    DialoguePanel *m_panel = nullptr;
+    QPushButton *m_fastForwardButton = nullptr;
 
-    QList<StoryLine> m_lines;
+    QList<StoryStep> m_steps;
+    QString m_storyKey;
     int m_index = -1;
     bool m_finished = false;
 
+    bool advanceToNextLine();
+    bool nextLineExists() const;
     void showCurrentLine();
     void finishStory();
 };

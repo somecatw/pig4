@@ -7,6 +7,7 @@
 #include <QString>
 #include <QWidget>
 
+class DialoguePanel;
 class QEvent;
 class QLabel;
 class QTimer;
@@ -34,9 +35,7 @@ public:
     bool advance();
 
 private:
-    QLabel *m_speaker = nullptr;
-    QLabel *m_text = nullptr;
-    QLabel *m_advance = nullptr;
+    DialoguePanel *m_panel = nullptr;
     QTimer *m_hideTimer = nullptr;
     bool m_waiting = false;
 };

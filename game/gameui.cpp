@@ -1,4 +1,5 @@
 #include "gameui.h"
+#include "dialoguepanel.h"
 #include "itemdrag.h"
 
 #include <QApplication>
@@ -21,38 +22,17 @@ DialogueBar::DialogueBar(QWidget *parent)
     setAttribute(Qt::WA_StyledBackground, true);
     setAttribute(Qt::WA_TransparentForMouseEvents, true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    setStyleSheet(
-        "QWidget#dialogueBar {"
-        "  background-color: rgba(8, 8, 11, 205);"
-        "  border-top: 1px solid rgba(255, 255, 255, 28);"
-        "}"
-        "QLabel { background: transparent; }");
 
     auto *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(20, 10, 20, 10);
-    layout->setSpacing(8);
+    // HUD 外层还有 16px margin；这里配成和 StoryView 的 48px 左右、
+    // 底部 30px 对齐。提示和剧情使用同一块大面板，避免提示太不显眼。
+    layout->setContentsMargins(48, 0, 48, 30);
+    layout->setSpacing(0);
 
-    m_speaker = new QLabel(this);
-    m_speaker->setTextFormat(Qt::RichText);
-    m_speaker->setStyleSheet("color: #ffd15c; font-size: 14px; font-weight: 700;");
-    m_speaker->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
-    m_speaker->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-    m_text = new QLabel(this);
-    // 原版文本里会有颜色标签（例如上锁提示里的绿色钥匙名）。
-    m_text->setTextFormat(Qt::RichText);
-    m_text->setStyleSheet("color: #f1f1f3; font-size: 14px;");
-    m_text->setWordWrap(true);
-    m_text->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-    m_advance = new QLabel(QStringLiteral("▼"), this);
-    m_advance->setStyleSheet("color: #ffd15c; font-size: 12px;");
-    m_advance->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
-    m_advance->hide();
-
-    layout->addWidget(m_speaker, 0, Qt::AlignVCenter);
-    layout->addWidget(m_text, 1);
-    layout->addWidget(m_advance, 0, Qt::AlignVCenter);
+    m_panel = new DialoguePanel(this);
+    m_panel->setFixedHeight(150);
+    m_panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    layout->addWidget(m_panel);
 
     m_hideTimer = new QTimer(this);
     m_hideTimer->setSingleShot(true);
@@ -68,12 +48,9 @@ void DialogueBar::showLine(const QString &speaker, const QString &text, int dura
         return;
     }
 
-    m_speaker->setText(speaker.isEmpty() ? QString() : speaker + QStringLiteral("："));
-    m_speaker->setVisible(!speaker.isEmpty());
-    m_text->setText(text);
-
     m_waiting = durationMs <= 0;
-    m_advance->setVisible(m_waiting);
+    m_panel->setLine(speaker, text,
+                     m_waiting ? QStringLiteral("▼") : QString());
 
     m_hideTimer->stop();
     if (durationMs > 0)
@@ -93,10 +70,7 @@ void DialogueBar::clearLine()
 {
     m_hideTimer->stop();
     m_waiting = false;
-    m_text->clear();
-    m_speaker->clear();
-    m_speaker->hide();
-    m_advance->hide();
+    m_panel->clearLine();
     hide();
 }
 

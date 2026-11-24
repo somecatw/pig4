@@ -33,6 +33,11 @@
 
 using namespace std;
 
+// 角色竖直运动状态定义在文件后面的移动代码附近；剧情传送需要立刻把它们
+// 归零，避免剧情结束后继承传送前那一帧的下落速度。
+extern bool falling;
+extern float ySpeed;
+
 static const QList<InteractTarget> &emptyInteractTargets()
 {
     static QList<InteractTarget> empty;
@@ -46,6 +51,13 @@ static QString richTextToPlain(const QString &text)
     QTextDocument doc;
     doc.setHtml(text);
     return doc.toPlainText();
+}
+
+static QString storyPhaseEvent(const QString &key, const QString &phase)
+{
+    if (key.isEmpty())
+        return {};
+    return QStringLiteral("story.%1.%2").arg(key, phase);
 }
 
 static Transform lookAtTransform(const Vec3 &pos, const Vec3 &target){
@@ -121,11 +133,10 @@ MainWindow::MainWindow(QWidget *parent)
     // 剧情界面常驻，播放时挂进同一个 StageOverlay；关闭时摘下来。
     storyView = new StoryView(stage);
     storyView->hide();
-    connect(storyView, &StoryView::skipRequested, this, [this] {
-        closeStory(true);
-    });
+    connect(storyView, &StoryView::commandRequested,
+            this, &MainWindow::handleStoryCommand);
     connect(storyView, &StoryView::storyFinished, this, [this] {
-        closeStory(false);
+        closeStory();
     });
 
     // 内容 widget 没处理 Esc 时，外壳的兜底关闭。
@@ -134,7 +145,7 @@ MainWindow::MainWindow(QWidget *parent)
         if (content == itemDetailView)
             closeItemDetail();
         else if (content == storyView)
-            closeStory(true);
+            storyView->fastForward();
         else if (content == activePuzzleView)
             closePuzzle();
     });
@@ -188,7 +199,8 @@ MainWindow::MainWindow(QWidget *parent)
             qWarning() << "building.json not found";
         }
 
-        // 剧情文本：opening.json / plots.json 由 tools/extract_flash_story.py 生成。
+        // 剧情文本：movie_text.json / plots.json 由 tools/extract_flash_story.py 生成；
+        // StoryCatalog 优先从 movie_text.json 的 KaiChangBai 读取开场白。
         const QString storyFile = resolveAsset("assets/story/plots.json");
         const QString storyOpening = storyFile.isEmpty()
             ? resolveAsset("assets/story/opening.json") : storyFile;
@@ -198,6 +210,9 @@ MainWindow::MainWindow(QWidget *parent)
         } else {
             qWarning() << "story data not found";
         }
+
+        if (roomManager != nullptr && storyCatalog != nullptr)
+            installStoryTriggers();
 
         // 槽位 puzzle 的取走/放回需要同时改背包和发布剧情事件。
         // Puzzle 本身不依赖背包，MainWindow 作为中介连接一次即可。
@@ -226,9 +241,9 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
 
-        // 默认出生点：303 房间。
-        const Transform defaultCam = lookAtTransform({2532.0f, -500.0f, -700.0f},
-                                                     {1132.0f, -300.0f, 400.0f});
+        // 默认出生点：301 房间。
+        const Transform defaultCam = lookAtTransform({800.0f, -500.0f, -700.0f},
+                                                     {-600.0f, -300.0f, 400.0f});
         camera->setTransform(defaultCam);
         camera->updatePosition(defaultCam);
     }
@@ -623,6 +638,11 @@ void MainWindow::interactHovered()
         qDebug() << "picked up:" << target.pickupItem
                  << "inventory size:" << inventory.size();
         showGameNotice(QStringLiteral("获得 ") + name);
+        // 拾取事件放在 notice 之后：剧情 trigger 如果立即开始，会清掉
+        // 对话条并接管界面，玩家不会在剧情下面看到残留的“获得”提示。
+        if (roomManager != nullptr)
+            roomManager->events().publish(
+                QStringLiteral("pickup.") + target.pickupItem);
         return;
     }
 
@@ -873,7 +893,7 @@ void MainWindow::playStoryRequest(const QString &request)
 
     if (openingRequest) {
         script = storyCatalog->openingScript();
-        if (script.lines.isEmpty())
+        if (!script.hasLines())
             script = storyCatalog->firstScript();
     } else {
         // 格式：<plotId>[:<moduleName>]；省略 module 时用第一个 module。
@@ -882,23 +902,241 @@ void MainWindow::playStoryRequest(const QString &request)
         script = storyCatalog->script(parts.value(0), moduleName);
     }
 
-    if (script.lines.isEmpty()) {
+    if (!script.hasLines()) {
         showGameNotice(QStringLiteral("剧情不存在：") + request, 2500);
         return;
     }
     startStory(script);
 }
 
+void MainWindow::installStoryTriggers()
+{
+    if (roomManager == nullptr)
+        return;
+
+    for (const StoryTriggerDef &trigger : roomManager->building().storyTriggers) {
+        roomManager->events().on(trigger.event, [this, trigger] {
+            if (storyTriggersSuppressed())
+                return;
+            if (trigger.once && firedStoryTriggers.contains(trigger.event))
+                return;
+            if (stageOverlay == nullptr || stageOverlay->hasContent())
+                return;
+
+            if (trigger.once)
+                firedStoryTriggers.insert(trigger.event);
+            qDebug() << "story trigger:" << trigger.event
+                     << "->" << trigger.story;
+            playStoryRequest(trigger.story);
+        });
+        qDebug() << "story trigger connection:" << trigger.event
+                 << "->" << trigger.story << "once" << trigger.once;
+    }
+}
+
+void MainWindow::handleStoryCommand(const StoryCommand &command,
+                                    const QString &storyKey)
+{
+    // 命令表外的东西一律 pass，避免某段手写脚本还没迁移完就中断剧情。
+    using Handler = void (MainWindow::*)(const StoryCommand &, const QString &);
+    static const QHash<QString, Handler> commands = {
+        {QStringLiteral("teleport"), &MainWindow::storyCommandTeleport},
+        {QStringLiteral("giveItem"), &MainWindow::storyCommandGiveItem},
+        {QStringLiteral("setDoorState"), &MainWindow::storyCommandSetDoorState},
+        {QStringLiteral("lockDoor"), &MainWindow::storyCommandLockDoor},
+        {QStringLiteral("unlockDoor"), &MainWindow::storyCommandUnlockDoor},
+    };
+
+    const auto it = commands.constFind(command.name);
+    if (it == commands.constEnd()) {
+        qDebug() << "story command pass:" << command.name
+                 << "args" << command.args.size() << "story" << storyKey;
+        return;
+    }
+    (this->*it.value())(command, storyKey);
+}
+
+void MainWindow::storyCommandTeleport(const StoryCommand &command,
+                                      const QString &storyKey)
+{
+    if (camera == nullptr || stage == nullptr)
+        return;
+
+    // teleport x y z [lookX lookY lookZ]
+    // 只有前三个参数时保留当前朝向；六个参数时用 lookAt。
+    const QJsonArray &args = command.args;
+    const bool hasLook = args.size() >= 6;
+    if (args.size() != 3 && !hasLook) {
+        qWarning() << "story teleport needs x y z [lookX lookY lookZ], got"
+                   << args.size() << "args in" << storyKey;
+        return;
+    }
+    for (int i = 0; i < (hasLook ? 6 : 3); ++i) {
+        if (!args.at(i).isDouble()) {
+            qWarning() << "story teleport argument" << i << "is not a number";
+            return;
+        }
+    }
+
+    const Vec3 pos{float(args.at(0).toDouble()),
+                   float(args.at(1).toDouble()),
+                   float(args.at(2).toDouble())};
+    Transform world = camera->getGlobalTransform();
+    if (hasLook) {
+        const Vec3 look{float(args.at(3).toDouble()),
+                        float(args.at(4).toDouble()),
+                        float(args.at(5).toDouble())};
+        world = lookAtTransform(pos, look);
+    } else {
+        world.translation = pos;
+    }
+
+    const Transform rootGlobal = stage->root->getGlobalTransform();
+    camera->setTransform(world * rootGlobal.inverseTransform());
+    // 剧情可能在同一帧被快进关闭，下一帧的移动物理会立刻读取 camInfo。
+    camera->updatePosition(world);
+
+    falling = false;
+    ySpeed = 0.0f;
+    jumpFlag = false;
+    memset(wasdFlags, 0, sizeof(wasdFlags));
+    setHoveredTarget(-1);
+
+    if (roomManager != nullptr) {
+        if (Room *room = roomManager->roomAt(pos))
+            currentRoom = room->def.id;
+        else
+            currentRoom.clear();
+    }
+    updateRoomUi();
+
+    qDebug() << "story teleport:" << pos.to_string().c_str()
+             << "from" << storyKey;
+}
+
+void MainWindow::storyCommandGiveItem(const StoryCommand &command,
+                                      const QString &storyKey)
+{
+    if (command.args.isEmpty() || !command.args.first().isString()) {
+        qWarning() << "story giveItem needs an item id, story" << storyKey;
+        return;
+    }
+
+    const QString itemId = command.args.first().toString();
+    const ItemDef *def = itemCatalog.find(itemId);
+    const QString name = (def != nullptr && !def->name.isEmpty())
+        ? def->name : itemId;
+
+    // 图标优先用 items.json 的查看图；数字钥匙继续走程序化钥匙图标。
+    QImage icon;
+    if (itemId.startsWith(QStringLiteral("key_"))) {
+        bool ok = false;
+        const int number = itemId.mid(4).toInt(&ok);
+        if (ok)
+            icon = ItemIcons::keyIcon(ItemIcons::silver(), number);
+    }
+    if (icon.isNull() && def != nullptr && !def->views.isEmpty())
+        icon = def->views.first().image;
+    if (icon.isNull())
+        icon = ItemIcons::imageIcon(itemId + QStringLiteral(".png"));
+
+    addItem(itemId, name, icon);
+    const QString notice = QStringLiteral("获得 ") + name;
+    // 剧情界面打开时 DialogueBar 和剧情面板会叠在一起；先挂起提示，
+    // 等剧情关闭后再显示。
+    if (stageOverlay != nullptr && stageOverlay->hasContent())
+        pendingStoryNotices.append(notice);
+    else
+        showGameNotice(notice);
+    qDebug() << "story give item:" << itemId << name
+             << "story" << storyKey << "icon" << !icon.isNull();
+}
+
+void MainWindow::storyCommandSetDoorState(const StoryCommand &command,
+                                          const QString &storyKey)
+{
+    if (roomManager == nullptr || roomManager->doorSystem() == nullptr)
+        return;
+    if (command.args.size() < 3
+        || !command.args.at(0).isString()
+        || !command.args.at(1).isString()
+        || !command.args.at(2).isDouble()) {
+        qWarning() << "story setDoorState needs room, door and integer state, story"
+                   << storyKey;
+        return;
+    }
+
+    const QString roomId = command.args.at(0).toString();
+    const QString doorId = command.args.at(1).toString();
+    const int state = command.args.at(2).toInt();
+    Door *door = roomManager->doorSystem()->findDoor(roomId, doorId);
+    if (door == nullptr) {
+        qWarning() << "story setDoorState door not found:"
+                   << roomId << doorId;
+        return;
+    }
+
+    roomManager->doorSystem()->setInteractionState(door, state);
+    qDebug() << "story set door state:" << roomId << doorId << state
+             << "story" << storyKey;
+}
+
+void MainWindow::storyCommandLockDoor(const StoryCommand &command,
+                                      const QString &storyKey)
+{
+    storyDoorAction(command, storyKey, QStringLiteral("lock"));
+}
+
+void MainWindow::storyCommandUnlockDoor(const StoryCommand &command,
+                                        const QString &storyKey)
+{
+    storyDoorAction(command, storyKey, QStringLiteral("unlock"));
+}
+
+void MainWindow::storyDoorAction(const StoryCommand &command,
+                                 const QString &storyKey,
+                                 const QString &action)
+{
+    if (roomManager == nullptr || roomManager->doorSystem() == nullptr)
+        return;
+    if (command.args.size() < 2
+        || !command.args.at(0).isString()
+        || !command.args.at(1).isString()) {
+        qWarning() << "story" << action << "needs room and door id, story"
+                   << storyKey;
+        return;
+    }
+
+    const QString roomId = command.args.at(0).toString();
+    const QString doorId = command.args.at(1).toString();
+    Door *door = roomManager->doorSystem()->findDoor(roomId, doorId);
+    if (door == nullptr) {
+        qWarning() << "story" << action << "door not found:"
+                   << roomId << doorId;
+        return;
+    }
+
+    roomManager->doorSystem()->applyAction(door, action);
+    qDebug() << "story" << action << "door:" << roomId << doorId
+             << "story" << storyKey;
+}
+
 void MainWindow::startStory(const StoryScript &script)
 {
-    if (stageOverlay == nullptr || storyView == nullptr || script.lines.isEmpty())
+    if (stageOverlay == nullptr || storyView == nullptr || !script.hasLines())
         return;
     if (stageOverlay->hasContent())
         return;
 
+    activeStoryKey = script.key.isEmpty() ? script.id : script.key;
+    if (roomManager != nullptr)
+        roomManager->events().publish(
+            storyPhaseEvent(activeStoryKey, QStringLiteral("started")));
+
     storyView->setScript(script);
     showOverlay(storyView);
-    qDebug() << "story start:" << script.id << script.lines.size() << "lines";
+    qDebug() << "story start:" << activeStoryKey << script.steps.size()
+             << "steps" << script.lineCount() << "lines";
 }
 
 bool MainWindow::storyTriggersSuppressed() const
@@ -915,7 +1153,7 @@ bool MainWindow::storyTriggersSuppressed() const
 
 void MainWindow::startIntroStory()
 {
-    if (introStarted || currentRoom != QStringLiteral("room_303")
+    if (introStarted || currentRoom != QStringLiteral("room_301")
         || qEnvironmentVariableIsSet("PIG4_SKIP_INTRO")
         || storyTriggersSuppressed()) {
         return;
@@ -928,14 +1166,14 @@ void MainWindow::startIntroStory()
     StoryScript script = storyCatalog->openingScript();
     const StoryScript roomScript =
         storyCatalog->script(QStringLiteral("_7_Ruby"), QStringLiteral("module_1"));
-    script.lines += roomScript.lines;
-    if (script.lines.isEmpty())
+    script.steps += roomScript.steps;
+    if (!script.hasLines())
         return;
 
     introStarted = true;
-    introPaperPending = true;
-    script.id = QStringLiteral("303_intro");
-    script.title = QStringLiteral("303 / 出生");
+    script.id = QStringLiteral("301_intro");
+    script.key = QStringLiteral("301_intro");
+    script.title = QStringLiteral("301 / 出生");
     startStory(script);
 }
 
@@ -952,25 +1190,28 @@ void MainWindow::checkRoomStoryTriggers()
     playStoryRequest(QStringLiteral("_7_Ruby:module_2"));
 }
 
-void MainWindow::closeStory(bool skipped)
+void MainWindow::closeStory()
 {
     if (stageOverlay == nullptr || storyView == nullptr)
         return;
     if (stageOverlay->content() != storyView)
         return;
 
+    const QString finishedKey = activeStoryKey;
     hideOverlay(storyView);
     storyView->clearScript();
+    activeStoryKey.clear();
 
-    if (introPaperPending) {
-        introPaperPending = false;
-        addItem(QStringLiteral("paper"), QStringLiteral("纸团"),
-                ItemIcons::imageIcon(QStringLiteral("paper_fold.png")));
-        showGameNotice(QStringLiteral("获得 纸团"));
-    } else if (skipped) {
-        showGameNotice(QStringLiteral("已跳过剧情。"), 1500);
+    if (!pendingStoryNotices.isEmpty()) {
+        showGameNotice(pendingStoryNotices.join(QStringLiteral("   ")));
+        pendingStoryNotices.clear();
     }
-    qDebug() << "story closed, skipped:" << skipped;
+
+    // 生命周期事件在界面真正关闭之后发布，连接表可以直接锁门、开下一段剧情。
+    if (roomManager != nullptr && !finishedKey.isEmpty())
+        roomManager->events().publish(
+            storyPhaseEvent(finishedKey, QStringLiteral("finished")));
+    qDebug() << "story closed:" << finishedKey;
 
     // 如果进入大堂时正好有 overlay，关掉后再补一次触发检查。
     checkRoomStoryTriggers();
@@ -1178,10 +1419,6 @@ bool MainWindow::updatePortalTransition()
         currentRoom = portalDestinationRoom;
         updateRoomUi();
 
-        if (portalTransitionId == QStringLiteral("bath_window_301_303")
-            && currentRoom == QStringLiteral("room_303")) {
-            showGameNotice(QStringLiteral("【这边居然是……另一个厕所？】"), 3000);
-        }
         qDebug() << "portal transition finished, room:" << currentRoom;
     }
 

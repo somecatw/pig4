@@ -126,6 +126,50 @@ the game's `GameEvents` bus at load time, so a door can be unlocked/locked by
 any later story event without adding puzzle-specific code. Actions run in JSON
 order; use `unlock` before `open` on a locked door.
 
+## Door interaction states
+
+Door locks are not the whole story. A door can enter a story-controlled
+interaction state (0 = locked, 1 = unlocked, 2+ = configured behavior) without
+changing its physical open/closed state. Add a `doorStates` entry when a state
+needs its own prompt/action:
+
+```json
+"doorStates": [
+  {
+    "room": "room_5wcorridor",
+    "marker": "5W_billard",
+    "state": 2,
+    "prompt": "[F] 开门",
+    "notice": "危险！不要把门打开……",
+    "action": "none"
+  }
+]
+```
+
+`action` may be `none`, `unlock`, `lock`, `open`, `close` or `toggle`. With
+`none`, F displays `notice` and leaves the door unchanged. While a door is in a
+custom state, generic `connections` actions are ignored; use the story command
+`setDoorState room marker state` to enter or leave it. The physical lock still
+exists underneath, so scripts normally lock the door first and then set state 2.
+
+## Story triggers
+
+`storyTriggers` maps a transient `GameEvents` event to a story. Generic pickups
+publish `pickup.<itemId>`; the story runtime also publishes
+`story.<plotId>:<module>.started` and `.finished` for optional chaining.
+
+```json
+"storyTriggers": [
+  { "event": "pickup.key_3", "story": "_5_MeetShadow:module_1", "once": true }
+]
+```
+
+`once` defaults to true. The story module itself is hand-authored in
+`assets/story/plots_custom.json`; commands such as `teleport`, `giveItem`,
+`lockDoor` and `setDoorState` belong there rather than in the door connection
+table. Unknown story commands are passed, so a module can be wired before every
+command has a handler.
+
 ## Interactable props (INTERACT_ / HOT)
 
 3D props that stay part of the room model (clocks, fake doors, etc.) should be

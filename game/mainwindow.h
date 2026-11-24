@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QImage>
+#include <QSet>
+#include <QStringList>
 #include <QTimer>
 #include "stage3d.h"
 #include "roommanager.h"
@@ -27,6 +29,7 @@ class PuzzleView;
 class ItemDetailView;
 class StoryView;
 class StoryCatalog;
+struct StoryCommand;
 struct StoryScript;
 class DevHooks;
 
@@ -123,16 +126,27 @@ private:
     QString elevatorTravelFloor;
     void openItemDetail();
     void closeItemDetail();
-    // 剧情界面：第一版只播放文本，不运镜、不执行 raw 命令。
+    // 剧情界面：文本按原顺序播放；已知命令由命令表执行，未知命令 pass。
     void playStoryRequest(const QString &request);
     void startStory(const StoryScript &script);
-    void closeStory(bool skipped);
+    void closeStory();
+    void installStoryTriggers();
+    void handleStoryCommand(const StoryCommand &command, const QString &storyKey);
+    void storyCommandTeleport(const StoryCommand &command, const QString &storyKey);
+    void storyCommandGiveItem(const StoryCommand &command, const QString &storyKey);
+    void storyCommandSetDoorState(const StoryCommand &command, const QString &storyKey);
+    void storyCommandLockDoor(const StoryCommand &command, const QString &storyKey);
+    void storyCommandUnlockDoor(const StoryCommand &command, const QString &storyKey);
+    void storyDoorAction(const StoryCommand &command, const QString &storyKey,
+                         const QString &action);
     void startIntroStory();
     void checkRoomStoryTriggers();
     bool storyTriggersSuppressed() const;
     bool introStarted = false;
-    bool introPaperPending = false;
     bool lobbyCryPlayed = false;
+    QStringList pendingStoryNotices;
+    QSet<QString> firedStoryTriggers;
+    QString activeStoryKey;
     void combineItem(const QString &otherId);
     bool removeItem(const QString &id);
     void showGameNotice(const QString &text, int durationMs = 2200);

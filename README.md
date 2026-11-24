@@ -68,22 +68,97 @@ MSVC 的 `/showIncludes` 前缀会按当前控制台代码页输出 GBK 或 UTF-
 
 ## Story
 
-第一版剧情界面不运镜：相机和玩家留在原地，只在 3D 场景下方显示说话人和
-一条文本。剧情期间移动、交互和背包拖放被冻结，但 3D 场景继续渲染。
+第一版剧情界面本身不运镜，只在 3D 场景下方显示说话人和一条文本；个别
+剧情命令可以传送玩家（例如 `teleport`）。剧情期间移动、交互和背包
+拖放被冻结，但 3D 场景继续渲染。
 
 - 点击画面、`Space`、`F` 或回车推进；最后一行的下一次推进结束剧情。
-- 右上角“跳过”按钮和 `Esc` 直接结束整段剧情，随后恢复玩家控制。
-- 目前只播放 `assets/story/plots.json` 里的 `line` / `narration`；
-  `raw` 步骤（门、机关、选项、立绘、bgm 等）原样跳过，等我们按自己的配置重写。
-- `assets/story/plots.json` 和 `opening.json` 由
+- 右上角“快进”按钮和 `Esc` 会按原顺序执行剩余剧情命令，然后结束剧情；
+  命令表里没有的命令直接 pass，不会中断剧情。
+- `plots.json` 里的原始 `raw` 步骤只是 export 迁移参考，运行时不会执行。
+  手写脚本放在 `assets/story/plots_custom.json`，按 `<plotId>` / `<module>`
+  覆盖同名内容，并可以包含我们自己的命令步骤。
+- 命令表在 `MainWindow::handleStoryCommand()`，目前支持：
+  - `teleport x y z [lookX lookY lookZ]`：直接传送到世界坐标；可选的三个
+    look 参数用来指定朝向，不写则保留当前朝向。
+  - `giveItem itemId`：把 `items.json` 里定义的道具发进背包，名字和图标
+    也从道具定义解析。
+  - `setDoorState roomId doorId state`：设置门的剧情交互状态。0/1 对应
+    锁定/未锁定；2 及以上读取 `building.json` 的 `doorStates` 表，
+    显示该状态配置的准星提示和交互文本。
+  - `lockDoor roomId doorId` / `unlockDoor roomId doorId`：在剧情中锁定/解锁门。
+    门处于自定义状态（>=2）时普通连接和这类动作不会覆盖状态，需要用
+    `setDoorState` 显式切回。
+- 剧情生命周期会发布 `story.<plot:module>.started` / `.finished` 事件，
+  需要时仍可写进 `building.json` 的 `connections`。
+- 拾取通用 item 会发布 `pickup.<itemId>`；`storyTriggers` 把事件映射到
+  `<plotId>[:<moduleName>]`，`once` 默认为 true。
+- 开场白运行时读取 `assets/story/movie_text.json` 的 `KaiChangBai`；
+  `opening.json` 只是兼容回退。`plots.json` / `movie_text.json` 由
   `python -I tools/extract_flash_story.py` 从 `flash_export/` 生成。
+  修改 `movie_text.json` 后重启游戏即可生效，不需要重新编译。
+
+手写命令示例（`assets/story/plots_custom.json`）：
+
+```json
+{
+  "type": "command",
+  "name": "teleport",
+  "args": [5234.13, -2800.29, 616.89, 5236.91, -2800.29, 1266.88]
+},
+{
+  "type": "command",
+  "name": "giveItem",
+  "args": ["note_2044"]
+},
+{
+  "type": "command",
+  "name": "lockDoor",
+  "args": ["room_5wcorridor", "5W_billard"]
+},
+{
+  "type": "command",
+  "name": "setDoorState",
+  "args": ["room_5wcorridor", "5W_billard", 2]
+}
+```
+
+门状态表：
+
+```json
+"doorStates": [
+  {
+    "room": "room_5wcorridor",
+    "marker": "5W_billard",
+    "state": 2,
+    "prompt": "[F] 开门",
+    "notice": "危险！不要把门打开……",
+    "action": "none"
+  }
+]
+```
+
+`action` 支持 `none` / `unlock` / `lock` / `open` / `close` / `toggle`；
+`none` 状态下按 F 只显示 `notice`，不改变门。
+
+剧情事件配置示例：
+
+```json
+"storyTriggers": [
+  { "event": "pickup.key_3", "story": "_5_MeetShadow:module_1", "once": true }
+]
+```
 
 当前主线触发：
 
-- 新游戏在 303 出生，自动播放 `opening` + `_7_Ruby:module_1`；
-  剧情结束/跳过后直接获得纸团。
+- 新游戏在 301 出生，自动播放 `opening` + `_7_Ruby:module_1`；
+  手写脚本在“这是……”之后用 `giveItem note_2044` 发放写着“2044年4月4日”
+  的神秘纸条。这是独立道具，和大堂里的纸团线索不是同一个 item。
 - 首次进入大堂播放 `_7_Ruby:module_2`（哭声）。
 - 大堂大门按 F 首次播放 `_7_Ruby:module_6`，之后回退到普通 notice。
+- 首次拿起娱乐室的三号钥匙触发 `_5_MeetShadow:module_1`；手写脚本用
+  `teleport` 把玩家送到五楼西走廊门外，再用 `lockDoor` 锁门并把门切到
+  状态 2。之后交互娱乐室门只会提示“危险！不要把门打开……”。
 
 开发测试：
 
@@ -91,9 +166,11 @@ MSVC 的 `/showIncludes` 前缀会按当前控制台代码页输出 GBK 或 UTF-
 - `PIG4_STORY=opening` 启动时播放开场白，
   `PIG4_STORY=_0_Dian:module_1` 播放指定 plot/module；
 - `PIG4_STORY_ADVANCE=3` 在第一帧推进 3 行，方便截图；
-- `PIG4_STORY_SKIP=1` 在第一帧点击“跳过”按钮，验证关闭与恢复控制；
+- `PIG4_STORY_FAST_FORWARD=1`（兼容旧名 `PIG4_STORY_SKIP=1`）
+  在第一帧对剩余剧情执行快进，验证命令执行与恢复控制；
+- `PIG4_SOLVE=pickup.key_3` 可用于测试剧情 trigger；
 - `PIG4_SHOW_STORIES=1` 让截图/调试模式也自动触发主线剧情；
-- `PIG4_SKIP_INTRO=1` 跳过 303 开场，`PIG4_SKIP_STORY=1` 跳过房间自动剧情。
+- `PIG4_SKIP_INTRO=1` 跳过 301 开场，`PIG4_SKIP_STORY=1` 跳过房间自动剧情。
 
 ## Overlay framework
 

@@ -55,6 +55,7 @@ void Door::setLock(const QString &type, const QString &id, const QString &label,
         target = closedAngle;
     }
     m_state = type.isEmpty() ? DoorState::Closed : DoorState::Locked;
+    m_interactionState = type.isEmpty() ? 1 : 0;
     emit stateChanged();
 }
 
@@ -67,6 +68,7 @@ QString Door::lockDisplayName() const
 
 void Door::unlock()
 {
+    m_interactionState = 1;
     if (m_state == DoorState::Locked)
         m_state = DoorState::Closed;
     m_autoCloseRemaining = 0.0f;
@@ -75,6 +77,7 @@ void Door::unlock()
 
 void Door::lock()
 {
+    m_interactionState = 0;
     m_autoCloseRemaining = 0.0f;
     if (m_motion == DoorMotion::Slide) {
         m_slideT = 0.0f;

@@ -56,6 +56,7 @@ set(PIG4_SOURCES
 
     game/mainwindow.h game/mainwindow.cpp game/mainwindow.ui
     game/gameui.h game/gameui.cpp
+    game/dialoguepanel.h game/dialoguepanel.cpp
     game/gameevents.h game/gameevents.cpp
     game/clockart.h game/clockart.cpp
     game/textart.h game/textart.cpp

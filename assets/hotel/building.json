@@ -53,7 +53,7 @@
     },
     {
       "id": "room_billard",
-      "label": "五楼·台球室",
+      "label": "五楼·娱乐室",
       "scene": "room_billard/room_billard_engine.obj",
       "markers": "room_billard/room_billard.markers.json",
       "cell": [2, -1, 2],
@@ -232,6 +232,21 @@
       "type": "key",
       "id": "key_3",
       "label": "3号钥匙"
+    },
+    {
+      "room": "room_billard",
+      "marker": "billard_5E",
+      "type": "event"
+    }
+  ],
+  "doorStates": [
+    {
+      "room": "room_5wcorridor",
+      "marker": "5W_billard",
+      "state": 2,
+      "prompt": "[F] 开门",
+      "notice": "危险！不要把门打开……",
+      "action": "none"
     }
   ],
   "connections": [
@@ -258,6 +273,13 @@
       "room": "room_5wcorridor",
       "marker": "5W_billard",
       "action": "unlock"
+    }
+  ],
+  "storyTriggers": [
+    {
+      "event": "pickup.key_3",
+      "story": "_5_MeetShadow:module_1",
+      "once": true
     }
   ],
   "interactions": [
@@ -296,6 +318,13 @@
       "item": "key_1",
       "name": "1号钥匙",
       "icon": "key:1"
+    },
+    {
+      "room": "room_lobby",
+      "marker": "item_paper",
+      "item": "paper",
+      "name": "纸团",
+      "icon": "paper_fold.png"
     },
     {
       "room": "room_billard",

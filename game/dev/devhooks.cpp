@@ -281,23 +281,25 @@ void DevHooks::updateOverlay(MainWindow &window)
         }
     }
 
-    // PIG4_STORY_ADVANCE=n / PIG4_STORY_SKIP=1
+    // PIG4_STORY_ADVANCE=n / PIG4_STORY_FAST_FORWARD=1
+    // PIG4_STORY_SKIP is the old name for the same fast-forward test.
     static const int storyAdvanceTest =
         qEnvironmentVariableIntValue("PIG4_STORY_ADVANCE");
-    static const bool storySkipTest =
-        qEnvironmentVariableIsSet("PIG4_STORY_SKIP");
+    static const bool storyFastForwardTest =
+        qEnvironmentVariableIsSet("PIG4_STORY_FAST_FORWARD")
+        || qEnvironmentVariableIsSet("PIG4_STORY_SKIP");
     static bool storyTestDone = false;
-    if (!storyTestDone && (storyAdvanceTest > 0 || storySkipTest)) {
+    if (!storyTestDone && (storyAdvanceTest > 0 || storyFastForwardTest)) {
         if (auto *story = qobject_cast<StoryView *>(window.stageOverlay->content())) {
             storyTestDone = true;
             for (int i = 0; i < storyAdvanceTest; ++i)
                 story->advance();
-            if (storySkipTest) {
+            if (storyFastForwardTest) {
                 if (auto *button = story->findChild<QPushButton *>(
-                        QStringLiteral("storySkip"))) {
+                        QStringLiteral("storyFastForward"))) {
                     button->click();
                 } else {
-                    story->skip();
+                    story->fastForward();
                 }
             }
         }

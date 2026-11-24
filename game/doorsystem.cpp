@@ -103,6 +103,78 @@ void (Door::*DoorSystem::actionFor(const QString &name))()
     return actions.value(name, nullptr);
 }
 
+DoorSystem::Action DoorSystem::actionTypeFor(const QString &name)
+{
+    static const QHash<QString, Action> types = {
+        {QStringLiteral("none"),   Action::None},
+        {QStringLiteral("unlock"), Action::Unlock},
+        {QStringLiteral("lock"),   Action::None},
+        {QStringLiteral("open"),   Action::Open},
+        {QStringLiteral("close"),  Action::Close},
+        {QStringLiteral("toggle"), Action::None},
+    };
+    return types.value(name, Action::None);
+}
+
+QString DoorSystem::stateKey(const QString &room, const QString &marker)
+{
+    return room + QLatin1Char('\n') + marker;
+}
+
+const DoorStateDef *DoorSystem::stateRule(const Door *door, int state) const
+{
+    if (door == nullptr)
+        return nullptr;
+    const auto doorIt = m_stateRules.constFind(
+        stateKey(door->roomId(), door->markerId()));
+    if (doorIt == m_stateRules.constEnd())
+        return nullptr;
+    const auto stateIt = doorIt.value().constFind(state);
+    return stateIt == doorIt.value().constEnd() ? nullptr : &stateIt.value();
+}
+
+void DoorSystem::bindStates(const QList<DoorStateDef> &states)
+{
+    for (const DoorStateDef &def : states) {
+        Door *door = findDoor(def.room, def.marker);
+        if (door == nullptr) {
+            qWarning() << "door state target not found:"
+                       << def.room << def.marker << "state" << def.state;
+            continue;
+        }
+        const QString key = stateKey(def.room, def.marker);
+        if (m_stateRules.value(key).contains(def.state))
+            qWarning() << "duplicate door state:" << def.room << def.marker
+                       << def.state;
+        m_stateRules[key].insert(def.state, def);
+        qDebug() << "door state:" << def.room << def.marker
+                 << def.state << "action" << def.action
+                 << "prompt" << def.prompt;
+    }
+}
+
+void DoorSystem::setInteractionState(Door *door, int state)
+{
+    if (door == nullptr || state < 0)
+        return;
+
+    if (state == 0)
+        door->lock();
+    else if (state == 1)
+        door->unlock();
+    else
+        door->setInteractionState(state);
+
+    if (state >= 2 && stateRule(door, state) == nullptr) {
+        qWarning() << "door has no state rule for custom state:"
+                   << door->roomId() << door->markerId() << state;
+    }
+
+    syncCollider(door);
+    qDebug() << "door interaction state:" << door->roomId() << door->markerId()
+             << state << "physical" << int(door->state());
+}
+
 void DoorSystem::bindConnections(const QList<ConnectionDef> &connections, GameEvents &events)
 {
     for (const ConnectionDef &connection : connections) {
@@ -130,6 +202,14 @@ DoorSystem::Query DoorSystem::query(const Door *door, const QString &selectedIte
     Query result;
     if (door == nullptr)
         return result;
+
+    // 剧情状态优先于普通钥匙/开关门逻辑。
+    if (const DoorStateDef *rule = stateRule(door, door->interactionState())) {
+        result.prompt = rule->prompt.isEmpty()
+            ? QStringLiteral("[F] 交互") : rule->prompt;
+        result.action = actionTypeFor(rule->action);
+        return result;
+    }
 
     const QString openPrompt = door->isWindow()
         ? QStringLiteral("[F] 开窗") : QStringLiteral("[F] 开门");
@@ -183,6 +263,31 @@ DoorSystem::Action DoorSystem::interact(Door *door, const QString &selectedItemI
     if (door == nullptr)
         return Action::None;
 
+    // 自定义状态的行为完全由配置表决定；普通钥匙/开关门逻辑不再参与。
+    if (const DoorStateDef *rule = stateRule(door, door->interactionState())) {
+        const QString actionName = rule->action.isEmpty()
+            ? QStringLiteral("none") : rule->action;
+        if (actionName == QStringLiteral("none")) {
+            if (notice != nullptr)
+                *notice = rule->notice;
+            return Action::None;
+        }
+
+        auto fn = actionFor(actionName);
+        if (fn == nullptr) {
+            qWarning() << "unknown door state action:" << actionName
+                       << door->roomId() << door->markerId();
+            if (notice != nullptr)
+                *notice = rule->notice;
+            return Action::None;
+        }
+        (door->*fn)();
+        syncCollider(door);
+        qDebug() << "door state action:" << door->roomId() << door->markerId()
+                 << actionName << "state" << door->interactionState();
+        return actionTypeFor(actionName);
+    }
+
     if (door->isOpen()) {
         if (!door->portalId().isEmpty())
             return Action::Climb;
@@ -224,6 +329,17 @@ void DoorSystem::applyAction(Door *door, const QString &action)
 {
     if (door == nullptr)
         return;
+
+    // 剧情自定义状态只能由 setDoorState 显式切换；不要让普通事件
+    // 顺手把危险状态解锁/打开。调试外挂仍可直接调 Door。
+    if (door->interactionState() >= 2) {
+        qDebug() << "door action blocked by interaction state:"
+                 << door->roomId() << door->markerId()
+                 << "state" << door->interactionState()
+                 << "action" << action;
+        return;
+    }
+
     auto fn = actionFor(action);
     if (fn == nullptr) {
         qWarning() << "unknown door action:" << action;

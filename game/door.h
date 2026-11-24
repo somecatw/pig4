@@ -39,6 +39,12 @@ public:
     bool isLocked() const { return m_state == DoorState::Locked; }
     bool isOpen() const { return m_state == DoorState::Open; }
 
+    // 剧情/交互层状态：0=锁定，1=未锁定，2+=配置表里的自定义状态。
+    // 它和物理门板状态（Locked/Closed/Open）分开，避免往 DoorState 里
+    // 堆叠动画状态与剧情状态。
+    int interactionState() const { return m_interactionState; }
+    void setInteractionState(int state) { m_interactionState = state; }
+
     void unlock();
     void lock();
     void open();
@@ -86,6 +92,7 @@ private:
 
     DoorKind m_kind = DoorKind::Door;
     DoorState m_state = DoorState::Closed;
+    int m_interactionState = 1;
 
     QString m_roomId;
     QString m_markerId;

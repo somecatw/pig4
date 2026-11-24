@@ -2,8 +2,13 @@
   "id": "opening",
   "title": "开场白",
   "source": "flash_export/juqing/movie/KaiChangBai.as",
-  "note": "Frame order follows the numeric this.t[frame] keys. The original movie may use named frame labels; verify against the FLA.",
+  "note": "Frame order follows the KaiChangBai timeline used by movie_text.json.",
   "lines": [
+    {
+      "frame": 10,
+      "speaker": "???",
+      "text": "……"
+    },
     {
       "frame": 1,
       "speaker": "???",
@@ -15,79 +20,14 @@
       "text": "执念只会让你重复犯错……"
     },
     {
+      "frame": 39,
+      "speaker": "???",
+      "text": "而且是不断地重复……"
+    },
+    {
       "frame": 3,
       "speaker": "???",
       "text": "不！这不是真的！我不要！"
-    },
-    {
-      "frame": 5,
-      "speaker": "???",
-      "text": "黑……黑影！"
-    },
-    {
-      "frame": 6,
-      "speaker": "???",
-      "text": "你是怎么进来的……"
-    },
-    {
-      "frame": 7,
-      "speaker": null,
-      "text": "【“零”】"
-    },
-    {
-      "frame": 8,
-      "speaker": "???",
-      "text": "啊——！"
-    },
-    {
-      "frame": 9,
-      "speaker": "???",
-      "text": "救……救命……"
-    },
-    {
-      "frame": 10,
-      "speaker": "???",
-      "text": "……"
-    },
-    {
-      "frame": 11,
-      "speaker": "丹",
-      "text": "！"
-    },
-    {
-      "frame": 12,
-      "speaker": "丹",
-      "text": "（好可怕的梦……虽然内容记不太清了，但是心有余悸的感觉还在。）"
-    },
-    {
-      "frame": 13,
-      "speaker": "丹",
-      "text": "（对了，梦里好像有一扇绿门，可是……不知道为什么，我会对绿门感到害怕……）"
-    },
-    {
-      "frame": 14,
-      "speaker": "丹",
-      "text": "……"
-    },
-    {
-      "frame": 15,
-      "speaker": "丹",
-      "text": "咦？小七？小七呢？小七去哪儿了？"
-    },
-    {
-      "frame": 16,
-      "speaker": "丹",
-      "text": "小七一直都很乖巧，大半夜地不会到处乱跑的……"
-    },
-    {
-      "frame": 17,
-      "speaker": "丹",
-      "text": "我有不好的预感……"
-    },
-    {
-      "frame": 21,
-      "speaker": "丹",
-      "text": "不行！我得赶紧把小七找回来！"
     },
     {
       "frame": 22,
@@ -105,6 +45,31 @@
       "text": "我不想看到你再有一次那样的经历！"
     },
     {
+      "frame": 29,
+      "speaker": null,
+      "text": "……"
+    },
+    {
+      "frame": 30,
+      "speaker": null,
+      "text": "……\n……"
+    },
+    {
+      "frame": 31,
+      "speaker": null,
+      "text": "……\n……\n……"
+    },
+    {
+      "frame": 5,
+      "speaker": "???",
+      "text": "黑……黑影！"
+    },
+    {
+      "frame": 6,
+      "speaker": "???",
+      "text": "你是怎么进来的……"
+    },
+    {
       "frame": 26,
       "speaker": null,
       "text": "【“三”】"
@@ -120,19 +85,64 @@
       "text": "【“一”】"
     },
     {
-      "frame": 29,
+      "frame": 7,
       "speaker": null,
+      "text": "【“零”】"
+    },
+    {
+      "frame": 8,
+      "speaker": "???",
+      "text": "啊——！"
+    },
+    {
+      "frame": 9,
+      "speaker": "???",
+      "text": "救……救命……"
+    },
+    {
+      "frame": 11,
+      "speaker": "丹",
+      "text": "！"
+    },
+    {
+      "frame": 35,
+      "speaker": null,
+      "text": "【倪丹，女，G市当红歌星。】"
+    },
+    {
+      "frame": 36,
+      "speaker": null,
+      "text": "【深夜，借宿于魔方旅馆的她，被一场噩梦惊醒。】"
+    },
+    {
+      "frame": 12,
+      "speaker": "丹",
+      "text": "（好可怕的梦……虽然内容记不太清了，但是心有余悸的感觉还在。）"
+    },
+    {
+      "frame": 13,
+      "speaker": "丹",
+      "text": "（对了，梦里好像有一扇绿门，可是……不知道为什么，我会对绿门感到害怕……）"
+    },
+    {
+      "frame": 14,
+      "speaker": "丹",
       "text": "……"
     },
     {
-      "frame": 30,
-      "speaker": null,
-      "text": "……\n……"
+      "frame": 38,
+      "speaker": "丹",
+      "text": "这是怎么回事……而且……我怎么会穿成这样睡觉……"
     },
     {
-      "frame": 31,
-      "speaker": null,
-      "text": "……\n……\n……"
+      "frame": 37,
+      "speaker": "丹",
+      "text": "……"
+    },
+    {
+      "frame": 15,
+      "speaker": "丹",
+      "text": "咦？小七？小七呢？小七去哪儿了？"
     },
     {
       "frame": 32,
@@ -150,29 +160,19 @@
       "text": "怎……怎么会……"
     },
     {
-      "frame": 35,
-      "speaker": null,
-      "text": "【倪丹，女，G市当红歌星。】"
-    },
-    {
-      "frame": 36,
-      "speaker": null,
-      "text": "【深夜，借宿于魔方旅馆的她，被一场噩梦惊醒。】"
-    },
-    {
-      "frame": 37,
+      "frame": 16,
       "speaker": "丹",
-      "text": "……"
+      "text": "小七一直都很乖巧，大半夜地不会到处乱跑的……"
     },
     {
-      "frame": 38,
+      "frame": 17,
       "speaker": "丹",
-      "text": "这是怎么回事……而且……我怎么会穿成这样睡觉……"
+      "text": "我有不好的预感……"
     },
     {
-      "frame": 39,
-      "speaker": "???",
-      "text": "而且是不断地重复……"
+      "frame": 21,
+      "speaker": "丹",
+      "text": "不行！我得赶紧把小七找回来！"
     }
   ]
 }

@@ -117,6 +117,25 @@ BuildingDef BuildingManifest::load(const QString &path)
             qWarning() << "building manifest: lock missing room/marker/type, skipped";
     }
 
+    const QJsonArray doorStates = root.value("doorStates").toArray();
+    for (const QJsonValue &v : doorStates) {
+        if (!v.isObject()) continue;
+        const QJsonObject o = v.toObject();
+        DoorStateDef state;
+        state.room = o.value("room").toString();
+        state.marker = o.value("marker").toString();
+        state.state = o.value("state").toInt(-1);
+        state.prompt = o.value("prompt").toString();
+        state.notice = o.value("notice").toString();
+        state.action = o.value("action").toString(QStringLiteral("none"));
+        if (!state.room.isEmpty() && !state.marker.isEmpty()
+            && state.state >= 0) {
+            def.doorStates.push_back(state);
+        } else {
+            qWarning() << "building manifest: doorState missing room/marker/state, skipped";
+        }
+    }
+
     const QJsonArray connections = root.value("connections").toArray();
     for (const QJsonValue &v : connections) {
         if (!v.isObject()) continue;
@@ -131,6 +150,20 @@ BuildingDef BuildingManifest::load(const QString &path)
             def.connections.push_back(connection);
         else
             qWarning() << "building manifest: connection missing field, skipped";
+    }
+
+    const QJsonArray storyTriggers = root.value("storyTriggers").toArray();
+    for (const QJsonValue &v : storyTriggers) {
+        if (!v.isObject()) continue;
+        const QJsonObject o = v.toObject();
+        StoryTriggerDef trigger;
+        trigger.event = o.value("event").toString();
+        trigger.story = o.value("story").toString();
+        trigger.once = o.value("once").toBool(true);
+        if (!trigger.event.isEmpty() && !trigger.story.isEmpty())
+            def.storyTriggers.push_back(trigger);
+        else
+            qWarning() << "building manifest: storyTrigger missing event/story, skipped";
     }
 
     const QJsonArray interactions = root.value("interactions").toArray();

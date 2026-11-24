@@ -876,6 +876,7 @@ bool RoomManager::loadBuilding(const QString &path)
 
     for (const LockDef &lock : m_def.locks)
         m_doorSystem.applyLock(lock);
+    m_doorSystem.bindStates(m_def.doorStates);
     m_doorSystem.bindConnections(m_def.connections, m_events);
 
     qDebug() << "room grid cell size:" << cellSize.x << cellSize.y << cellSize.z

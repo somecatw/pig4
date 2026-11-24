@@ -1,0 +1,69 @@
+{
+  "note": "手写的剧情脚本，覆盖 plots.json 里的同名 plot/module。extract_flash_story.py 不会生成或修改这个文件。",
+  "plots": [
+    {
+      "id": "_5_MeetShadow",
+      "modules": [
+        {
+          "name": "module_1",
+          "steps": [
+            { "type": "narration", "text": "【有人解开了门锁。】" },
+            { "type": "narration", "text": "【门被打开了。】" },
+            { "type": "line", "speaker": "丹", "text": "！" },
+            { "type": "line", "speaker": "丹", "text": "你是谁？" },
+            { "type": "line", "speaker": "黑影", "text": "……" },
+            { "type": "line", "speaker": "丹", "text": "啊！" },
+            { "type": "narration", "text": "【黑影猛地向丹扑来，丹吓得夺路而逃。】" },
+            {
+              "type": "command",
+              "name": "teleport",
+              "args": [5234.1323, -2800.2896, 616.8851, 5236.9121, -2800.2896, 1266.8792]
+            },
+            {
+              "type": "command",
+              "name": "lockDoor",
+              "args": ["room_5wcorridor", "5W_billard"]
+            },
+            {
+              "type": "command",
+              "name": "setDoorState",
+              "args": ["room_5wcorridor", "5W_billard", 2]
+            },
+            { "type": "narration", "text": "【丹赶紧把门重新锁上。】" },
+            { "type": "line", "speaker": "丹", "text": "……" },
+            { "type": "line", "speaker": "丹", "text": "呼，好险……" },
+            { "type": "narration", "text": "【黑影的出现，让丹产生了莫名的恐惧。】" },
+            { "type": "line", "speaker": "丹", "text": "这个黑影……" },
+            { "type": "line", "speaker": "丹", "text": "难……难道，是……" },
+            { "type": "line", "speaker": "丹", "text": "不……不会吧……他不是已经死了吗？" },
+            { "type": "line", "speaker": "丹", "text": "或者是……他还有其它同伙……" },
+            { "type": "narration", "text": "【在丹的内心深处，似乎隐藏着一段不堪回首的过去。】" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "_7_Ruby",
+      "modules": [
+        {
+          "name": "module_1",
+          "steps": [
+            { "type": "line", "speaker": "丹", "text": "……" },
+            { "type": "line", "speaker": "丹", "text": "这是……" },
+            { "type": "command", "name": "giveItem", "args": ["note_2044"] },
+            { "type": "narration", "text": "【得到物品。】" },
+            { "type": "narration", "text": "【一张神秘的纸条，上面用黑色水笔写着“2044年4月4日”。】" },
+            { "type": "line", "speaker": "丹", "text": "……" },
+            { "type": "line", "speaker": "丹", "text": "这是什么意思？" },
+            { "type": "line", "speaker": "丹", "text": "咦，这个日期，不就是当年的……" },
+            { "type": "narration", "text": "【纸条上的信息让丹感到一阵寒意，这不禁让丹将小七的失踪与之联系起来。】" },
+            { "type": "line", "speaker": "丹", "text": "不……不好了，小七！小七！" },
+            { "type": "narration", "text": "【丹连忙起身，她现在唯一想做的就是找回心爱的小七。】" },
+            { "type": "narration", "text": "【虽然不知道是不是恶作剧，但小七半夜里突然失踪实在太过诡异。】" },
+            { "type": "narration", "text": "【她必须确认小七的安危，同时找出事情的真相。】" }
+          ]
+        }
+      ]
+    }
+  ]
+}
