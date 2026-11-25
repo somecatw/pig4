@@ -4,6 +4,8 @@
 #include "shaders.h"
 #include "parallel_render.h"
 
+extern thread_local uint64_t tlPixelVisited;
+
 template<typename T> concept IsShader = requires(const EdgeIterator &edgeIt, const Iterator2D &zInv, const Iterator2D &u_z, const Iterator2D &v_z){
     {T::alphaTest(uint(), edgeIt, zInv, u_z, v_z)} -> std::same_as<bool>;
 } && requires(float u, float v, float d, uint triangleID, Vec3 viewDirection){
@@ -160,7 +162,7 @@ template<typename FragmentShader>
                                       xrb*zInv.dv_dx+yrb*zInv.dv_dy});
     if(zMax < tile.zInvMin && tile.cpCount == tileSize*tileSize) return;
 
-    frameStat.pixelIterated += (xrb-xlt+1)*(yrb-ylt+1);
+    tlPixelVisited += uint64_t((xrb-xlt+1)*(yrb-ylt+1));
 
     edgeIt.batchIterate(xlt, ylt);
     zInv.batchIterate(xlt, ylt);
@@ -181,7 +183,6 @@ template<typename FragmentShader>
         bool passFlag = false;
 
         for(int x = xlt; x <= xrb; x++){
-
             if(tile.zInv[y][x] < tempZInv.val){
                 bool result = FragmentShader::alphaTest(frag.triangleID, tempEdgeIt, tempZInv, tempUZ, tempVZ);
                 if(result){
@@ -218,6 +219,76 @@ template<typename FragmentShader>
     }
 }
 
+
+template<typename FragmentShader>
+    requires IsShader<FragmentShader> void spanTileRasterization(const Triangle2D &frag, Tile &tile, int tileLevelResult){
+    if(tileLevelResult == TileLevelResult::OUTER || !frag.spanReady) return;
+    const int tx0 = tile.tileX * tileSize;
+    const int ty0 = tile.tileY * tileSize;
+    const int y0 = std::max(ty0, frag.ylt);
+    const int y1 = std::min(ty0 + tileSize - 1, frag.yrb);
+    if(y0 > y1) return;
+
+    SpanCursor cz, cu, cv;
+    int prevL = 0;
+    int prevSeg = -1;
+    bool anchored = false;
+    for(int y = y0; y <= y1; ++y){
+        const int seg = (y + 0.5f >= frag.splitY) ? 1 : 0;
+        const SpanEdge &le = frag.leftEdge[seg], &re = frag.rightEdge[seg];
+        const float yy = y + 0.5f;
+        // 边方程用 (x + 0.5, y + 0.5) 作采样点，SpanEdge 的 x0 是顶点 x + 0.5。
+        const float xl = le.x0 + le.m * (yy - le.y0);
+        const float xr = re.x0 + re.m * (yy - re.y0);
+        int l = int(std::floor(xl));
+        int r = int(std::ceil(xr)) - 1;
+        l = std::max(l, tx0);
+        r = std::min(r, tx0 + tileSize - 1);
+        if(l > r) continue;
+
+        if(!anchored || seg != prevSeg){
+            cz.it = frag.zInv; cu.it = frag.u_z; cv.it = frag.v_z;
+            cz.anchor(frag.zInv, l, y);
+            cu.anchor(frag.u_z, l, y);
+            cv.anchor(frag.v_z, l, y);
+        }else{
+            const int dx = l - prevL;
+            cz.it.val += cz.it.dv_dy;
+            cu.it.val += cu.it.dv_dy;
+            cv.it.val += cv.it.dv_dy;
+            if(dx){
+                cz.it.val += float(dx) * cz.it.dv_dx;
+                cu.it.val += float(dx) * cu.it.dv_dx;
+                cv.it.val += float(dx) * cv.it.dv_dx;
+            }
+        }
+        prevL = l;
+        prevSeg = seg;
+        anchored = true;
+        tlPixelVisited += uint64_t(r - l + 1);
+
+        EdgeIterator edge = frag.edgeIterator;
+        edge.batchIterate(l, y);
+        Iterator2D z = cz.it, u = cu.it, v = cv.it;
+        for(int x = l; x <= r; ++x){
+            if(edge.check() == EdgeIterator::INNER && tile.zInv[y-ty0][x-tx0] < z.val){
+                if(FragmentShader::alphaTest(frag.triangleID, edge, z, u, v)){
+                    const int ly = y - ty0, lx = x - tx0;
+                    tile.triangleID[ly][lx] = frag.triangleID;
+                    tile.zInv[ly][lx] = z.val;
+                    tile.u_z[ly][lx] = u.val;
+                    tile.v_z[ly][lx] = v.val;
+                    if(!tile.vis[ly][lx]){
+                        tile.vis[ly][lx] = true;
+                        tile.cpCount++;
+                        tile.zInvMin = std::min(tile.zInvMin, z.val);
+                    }
+                }
+            }
+            edge.xIterate(); z.val += z.dv_dx; u.val += u.dv_dx; v.val += v.dv_dx;
+        }
+    }
+}
 
 template<typename FragmentShader>
     requires IsShader<FragmentShader> uint colorDetermination(float u, float v, uint triangleID, const Vec3 &view, float d=0.0f){

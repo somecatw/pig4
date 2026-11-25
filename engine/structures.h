@@ -103,11 +103,34 @@ struct EdgeIterator{
 };
 
 // 2D 的三角形，包含光栅化阶段需要的信息
+// Precomputed boundary of one triangle edge: x(y + 0.5) = x0 + m*(y + 0.5 - y0).
+struct SpanEdge{
+    float x0, y0, m;
+    bool valid;
+};
+
+// Attribute iterator anchored at the (clipped) left edge of the current row.
+// Advancing a row is one precomputed addition, never a multiply.
+struct SpanCursor{
+    Iterator2D it;
+    void anchor(const Iterator2D &base, int x, int y){
+        it = base;
+        it.batchIterate(x, y);
+    }
+    void advanceRow(int dx){
+        it.val += it.dv_dy + float(dx) * it.dv_dx;
+    }
+};
+
 struct Triangle2D{
     uint triangleID;
     int xlt, ylt, xrb, yrb;
     EdgeIterator edgeIterator;
     Iterator2D zInv, u_z, v_z;
+
+    bool spanReady = false;
+    float splitY = 0.0f;
+    SpanEdge leftEdge[2], rightEdge[2];
 };
 
 struct CameraInfo{
@@ -123,6 +146,10 @@ struct FrameStat{
     int tcnt;
     int tileFragmentSum;
     std::atomic<uint> pixelIterated;
+    // Per-tile CPU time inside the parallel renderer (microseconds).
+    std::atomic<uint64_t> rasterUs{0};
+    std::atomic<uint64_t> normalizeUs{0};
+    std::atomic<uint64_t> shadeUs{0};
     float fps;
 };
 

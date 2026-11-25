@@ -2,6 +2,9 @@
 #include <QObject>
 #include <QDebug>
 #include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <cstring>
 #include "parallel_render.h"
 #include "shader_interface.h"
 #include "utils.h"
@@ -42,7 +45,17 @@ int tileLevelIterate(const Triangle2D &frag, int tileXlt, int tileYlt){
 
 std::atomic<int> tmp1 = 0, tmp2=0, tmp3=0;
 
+// TLS counters for OUTER-pixel statistics; merged into frameStat once per tile.
+thread_local uint64_t tlPixelVisited = 0;
+
+static const bool useSpanRaster = []{
+    const char *v = std::getenv("PIG4_SPAN_RASTER");
+    return !v || std::strcmp(v, "0") != 0;
+}();
+
 void RenderTask::operator()(){
+    const auto cpuStart = chrono::steady_clock::now();
+
     tile->zInvMin = 1e9f;
     tile->cpCount = 0;
 
@@ -67,19 +80,25 @@ void RenderTask::operator()(){
             && ptr->xrb > (tile->tileX+1)*tileSize
             && ptr->yrb > (tile->tileY+1)*tileSize)
             tileLevelResult = tileLevelIterate(*ptr, tile->tileX*tileSize, tile->tileY*tileSize);
-
         uint shaderConfig = ShaderInternal::triangles[ptr->triangleID].shaderConfig;
 
         if(shaderConfig & ShaderConfig::WireframeOnly)
             tileRasterization<WireframeShader>(*ptr, *tile, tileLevelResult);
         else if(shaderConfig & ShaderConfig::Highlight)
             tileRasterization<HighlightShader>(*ptr, *tile, tileLevelResult);
-        else if(shaderConfig & ShaderConfig::UseAlphaBitmap)
+        else if(shaderConfig & ShaderConfig::UseAlphaBitmap && !useSpanRaster)
             tileRasterization<AlphaTestShader>(*ptr, *tile, tileLevelResult);
-        else
-            tileRasterization<BaseShader>(*ptr, *tile, tileLevelResult);
+        else if(shaderConfig & ShaderConfig::UseAlphaBitmap){
+            if(useSpanRaster) spanTileRasterization<AlphaTestShader>(*ptr, *tile, tileLevelResult);
+            else tileRasterization<AlphaTestShader>(*ptr, *tile, tileLevelResult);
+        }else{
+            if(useSpanRaster) spanTileRasterization<BaseShader>(*ptr, *tile, tileLevelResult);
+            else tileRasterization<BaseShader>(*ptr, *tile, tileLevelResult);
+        }
 
     }
+
+    const auto rasterEnd = chrono::steady_clock::now();
 
     int tileXlt = tile->tileX * tileSize;
     int tileYlt = tile->tileY * tileSize;
@@ -128,6 +147,8 @@ void RenderTask::operator()(){
             }
         }
     }
+    const auto normalizeEnd = chrono::steady_clock::now();
+
     for(int y=0;y<tileSize;y++){
         int globalY = tileYlt+y;
         int bufferBase = globalY * ShaderInternal::pixelW;
@@ -176,6 +197,17 @@ void RenderTask::operator()(){
             ShaderInternal::buffer[bufferBase + globalX] = colorRef;
         }
     }
+
+    const auto shadeEnd = chrono::steady_clock::now();
+    const auto us = [](auto a, auto b){
+        return uint64_t(chrono::duration_cast<chrono::microseconds>(b - a).count());
+    };
+    frameStat.rasterUs.fetch_add(us(cpuStart, rasterEnd), memory_order_relaxed);
+    frameStat.normalizeUs.fetch_add(us(rasterEnd, normalizeEnd), memory_order_relaxed);
+    frameStat.shadeUs.fetch_add(us(normalizeEnd, shadeEnd), memory_order_relaxed);
+
+    frameStat.pixelIterated.fetch_add(uint(tlPixelVisited), memory_order_relaxed);
+    tlPixelVisited = 0;
 }
 
 void RenderTaskDispatcher::init(){

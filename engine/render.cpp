@@ -229,6 +229,74 @@ public:
             e2.z = v0.uv.y - v2.uv.y;
             calcLinearCoefficient(current.v_z, {v0.pos.x, v0.pos.y, v0.uv.y}, e0, e2);
 
+            // Scanline spans: sort the three projected vertices by y and
+            // precompute the two y bands' left/right edge lines.
+            {
+                Vec3 vs[3] = {v0.pos, v1.pos, v2.pos};
+                if(vs[0].y > vs[1].y) std::swap(vs[0], vs[1]);
+                if(vs[1].y > vs[2].y) std::swap(vs[1], vs[2]);
+                if(vs[0].y > vs[1].y) std::swap(vs[0], vs[1]);
+                const Vec3 &top = vs[0], &mid = vs[1], &bot = vs[2];
+                current.spanReady = true;
+                current.splitY = mid.y;
+                const float flatTop = std::abs(top.y - mid.y) < 1e-4f;
+                const float flatBot = std::abs(mid.y - bot.y) < 1e-4f;
+                if(flatTop && flatBot){
+                    current.spanReady = false;
+                }else{
+                    auto edge = [](const Vec3 &a, const Vec3 &b){
+                        SpanEdge e{};
+                        e.valid = std::abs(b.y - a.y) > 1e-4f;
+                        if(e.valid){
+                            e.y0 = a.y + 0.5f;
+                            e.x0 = a.x + 0.5f;
+                            e.m = (b.x - a.x) / (b.y - a.y);
+                        }
+                        return e;
+                    };
+                    SpanEdge t2m = edge(top, mid);
+                    SpanEdge t2b = edge(top, bot);
+                    SpanEdge m2b = edge(mid, bot);
+                    // 每个 y 带内，两条边的斜率就是它们的相对顺序。
+                    // 上半带两条边从顶点发散：斜率小的在左。
+                    // 下半带两条边向底点收敛：斜率大的在左。
+                    const auto diverge = [](const SpanEdge &a, const SpanEdge &b){
+                        if(!a.valid) return std::pair{&b, &a};
+                        if(!b.valid) return std::pair{&a, &b};
+                        return a.m <= b.m ? std::pair{&a, &b} : std::pair{&b, &a};
+                    };
+                    const auto converge = [](const SpanEdge &a, const SpanEdge &b){
+                        if(!a.valid) return std::pair{&b, &a};
+                        if(!b.valid) return std::pair{&a, &b};
+                        return a.m >= b.m ? std::pair{&a, &b} : std::pair{&b, &a};
+                    };
+                    if(flatTop){
+                        auto [l, r] = converge(m2b, t2b);
+                        current.leftEdge[0] = *l;
+                        current.rightEdge[0] = *r;
+                        current.leftEdge[1] = *l;
+                        current.rightEdge[1] = *r;
+                        current.splitY = bot.y + 1.0f;
+                    }else if(flatBot){
+                        auto [l, r] = diverge(t2m, t2b);
+                        current.leftEdge[0] = *l;
+                        current.rightEdge[0] = *r;
+                        current.leftEdge[1] = *l;
+                        current.rightEdge[1] = *r;
+                    }else{
+                        auto [l0, r0] = diverge(t2m, t2b);
+                        auto [l1, r1] = converge(t2b, m2b);
+                        current.leftEdge[0] = *l0;
+                        current.rightEdge[0] = *r0;
+                        current.leftEdge[1] = *l1;
+                        current.rightEdge[1] = *r1;
+                    }
+                    if(!current.leftEdge[0].valid || !current.rightEdge[0].valid ||
+                       !current.leftEdge[1].valid || !current.rightEdge[1].valid)
+                        current.spanReady = false;
+                }
+            }
+
         }
     }
     void parallelRasterization(){
@@ -428,6 +496,9 @@ public:
         frameStat.tcnt = triangles.size();
         frameStat.tileFragmentSum = 0;
         frameStat.pixelIterated = 0;
+        frameStat.rasterUs.store(0);
+        frameStat.normalizeUs.store(0);
+        frameStat.shadeUs.store(0);
 
         if(1){
             if(g_debugUVCapture){
@@ -481,6 +552,14 @@ public:
             qDebug()<<"triangle                  |"<<frameStat.tcnt;
             qDebug()<<"tiled triangle part       |"<<frameStat.tileFragmentSum;
             qDebug()<<"iterated pixel            |"<<frameStat.pixelIterated;
+            const uint64_t rasterUs = frameStat.rasterUs.load();
+            const uint64_t normalizeUs = frameStat.normalizeUs.load();
+            const uint64_t shadeUs = frameStat.shadeUs.load();
+            const uint64_t tileCpuUs = rasterUs + normalizeUs + shadeUs;
+            qDebug()<<"tile CPU raster  sum/avg  |"<<rasterUs<<"/"<<double(rasterUs)/threadCount;
+            qDebug()<<"tile CPU norm    sum/avg  |"<<normalizeUs<<"/"<<double(normalizeUs)/threadCount;
+            qDebug()<<"tile CPU shade   sum/avg  |"<<shadeUs<<"/"<<double(shadeUs)/threadCount;
+            qDebug()<<"tile CPU total   sum/avg  |"<<tileCpuUs<<"/"<<double(tileCpuUs)/threadCount;
         }
     }
     friend void clearRenderBuffer();
