@@ -2,6 +2,7 @@
 #define SHADER_INTERFACE_H
 
 #include "shaders.h"
+#include <type_traits>
 #include "parallel_render.h"
 
 extern thread_local uint64_t tlPixelVisited;
@@ -241,7 +242,7 @@ template<typename FragmentShader>
         const float xl = le.x0 + le.m * (yy - le.y0);
         const float xr = re.x0 + re.m * (yy - re.y0);
         int l = int(std::floor(xl));
-        int r = int(std::ceil(xr)) - 1;
+        int r = int(std::floor(xr));
         l = std::max(l, tx0);
         r = std::min(r, tx0 + tileSize - 1);
         if(l > r) continue;
@@ -267,14 +268,20 @@ template<typename FragmentShader>
         anchored = true;
         tlPixelVisited += uint64_t(r - l + 1);
 
+        constexpr bool needsEdge = !std::is_same_v<FragmentShader, BaseShader>;
         EdgeIterator edge = frag.edgeIterator;
         edge.batchIterate(l, y);
         Iterator2D z = cz.it, u = cu.it, v = cv.it;
+        const uint triangleID = frag.triangleID;
+        const int ly = y - ty0;
         for(int x = l; x <= r; ++x){
-            if(edge.check() == EdgeIterator::INNER && tile.zInv[y-ty0][x-tx0] < z.val){
-                if(FragmentShader::alphaTest(frag.triangleID, edge, z, u, v)){
-                    const int ly = y - ty0, lx = x - tx0;
-                    tile.triangleID[ly][lx] = frag.triangleID;
+            const int lx = x - tx0;
+            if(tile.zInv[ly][lx] < z.val && edge.check() == EdgeIterator::INNER){
+                bool pass = true;
+                if constexpr(needsEdge)
+                    pass = FragmentShader::alphaTest(triangleID, edge, z, u, v);
+                if(pass){
+                    tile.triangleID[ly][lx] = triangleID;
                     tile.zInv[ly][lx] = z.val;
                     tile.u_z[ly][lx] = u.val;
                     tile.v_z[ly][lx] = v.val;
@@ -285,7 +292,8 @@ template<typename FragmentShader>
                     }
                 }
             }
-            edge.xIterate(); z.val += z.dv_dx; u.val += u.dv_dx; v.val += v.dv_dx;
+            edge.xIterate();
+            z.val += z.dv_dx; u.val += u.dv_dx; v.val += v.dv_dx;
         }
     }
 }
